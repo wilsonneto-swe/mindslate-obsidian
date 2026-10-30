@@ -1,0 +1,12 @@
+# dependencies
+node_modules/
+
+# the build: main.js and styles.css at the root (what Obsidian loads), build/ on the way there
+build/
+/main.js
+/styles.css
+
+# a test vault's plugin data, logs and OS noise
+data.json
+*.log
+.DS_Store

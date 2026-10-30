@@ -1,0 +1,63 @@
+name: release
+
+# A version tag publishes the release Obsidian installs the plugin from. The tag is the bare version in
+# manifest.json (0.1.0, no "v"); the release holds main.js, manifest.json and styles.css, built here from the
+# tagged source with `npm run build`, the same build Obsidian's community directory checks the release against.
+# To release: set the version in manifest.json, package.json and versions.json, commit, then
+#   git tag <version> && git push origin <version>
+
+on:
+  push:
+    tags: ['[0-9]+.[0-9]+.[0-9]+']
+
+permissions:
+  contents: write # create the release and upload its files
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install (exact lockfile)
+        run: npm ci
+
+      - name: The tag is the plugin's version
+        run: |
+          node -e '
+            const tag = process.env.TAG;
+            const manifest = require("./manifest.json");
+            const versions = require("./versions.json");
+            const pkg = require("./package.json");
+            const bad = [];
+            if (manifest.version !== tag) bad.push(`manifest.json says ${manifest.version}`);
+            if (pkg.version !== tag) bad.push(`package.json says ${pkg.version}`);
+            if (versions[tag] !== manifest.minAppVersion) bad.push(`versions.json does not map ${tag} to ${manifest.minAppVersion}`);
+            if (bad.length) { console.error(`release ${tag}: ` + bad.join("; ")); process.exit(1); }
+          '
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          ls -l main.js manifest.json styles.css
+          # a draft first, published once its files are attached: Obsidian never sees a release without them
+          gh release create "$TAG" main.js manifest.json styles.css --verify-tag --draft --title "$TAG" \
+            --notes "Mindslate $TAG. Install it from Obsidian (Settings > Community plugins > Browse), or copy main.js, manifest.json and styles.css into <vault>/.obsidian/plugins/mindslate/."
+          gh release edit "$TAG" --draft=false --latest
+          gh release view "$TAG" --json assets --jq '.assets[].name'

@@ -1,0 +1,112 @@
+/* Mindslate in Obsidian. Every rule is scoped under .mmv-view, the class on the map view's content element; the
+   core's own sheet (core/view/editor.css) is moved under it at build time too (vite.config.ts SCOPE), so
+   nothing here or there reaches the rest of Obsidian. */
+
+/* FULL-BLEED: the map is the whole view, no padding and no scrolling of Obsidian's own */
+.workspace-leaf-content .view-content.mmv-view {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* THEME: the core's colours (editor.css, THEMING) on Obsidian's variables, so the map follows the theme, light or dark,
+   and the accent colour, live. The colours the core paints from script follow on css-change (theme.ts). */
+.mmv-view {
+  --mm-canvas: var(--background-primary);
+  --mm-dot: var(--background-modifier-border);
+  --mm-text: var(--text-normal);
+  --mm-root-fill: color-mix(in srgb, var(--text-normal) 10%, var(--background-primary));
+  --mm-ring-fill: var(--mm-root-fill);
+  --mm-root-text: var(--text-normal);
+  --mm-text-1: var(--text-normal);
+  --mm-text-2: color-mix(in srgb, var(--text-normal) 86%, var(--background-primary));
+  --mm-caret: var(--caret-color, var(--text-normal));
+  --mm-accent: var(--interactive-accent);
+  --mm-accent-fill: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
+  --mm-accent-halo: color-mix(in srgb, var(--interactive-accent) 35%, transparent);
+  --mm-accent-wash: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  --mm-text-selection: var(--text-selection);
+  --mm-on-accent: var(--text-on-accent);
+  --mm-ghost-back: color-mix(in srgb, var(--interactive-accent) 45%, var(--background-primary));
+  --mm-shadow: var(--background-modifier-box-shadow);
+  --mm-root-badge-text: var(--background-primary);
+  --mm-plus-fill: var(--background-primary-alt);
+  --mm-plus-border: color-mix(in srgb, var(--interactive-accent) 60%, transparent);
+  --mm-bar-fill: var(--background-secondary);
+  --mm-bar-border: var(--background-modifier-border);
+  --mm-bar-shadow: var(--background-modifier-box-shadow);
+  --mm-bar-text: var(--text-normal);
+  --mm-bar-strong: var(--text-normal);
+  --mm-bar-sep: var(--background-modifier-border);
+  --mm-bar-hover: var(--background-modifier-hover);
+  --mm-bar-muted: var(--text-muted);
+  --mm-bar-disabled: var(--text-faint);
+  --mm-bar-danger: var(--text-error);
+  --mm-bar-danger-fill: color-mix(in srgb, var(--text-error) 15%, transparent);
+}
+
+/* GUARD: Obsidian styles every <button> (a fill, a shadow, a focus ring, flex layout, a theme's corner shape) and dims
+   aria-disabled ones; the map's buttons (the selection bar) look as the core draws them */
+.mmv-view .mm-root button {
+  display: inline-block;
+  box-shadow: none;
+  opacity: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  corner-shape: round;
+}
+/* no long-press callout (iOS) and no text selection outside a label being edited */
+.mmv-view .mm-root {
+  -webkit-touch-callout: none;
+}
+.mmv-view .mm-root .mm-node.mm-editing .mm-label {
+  -webkit-touch-callout: default;
+}
+/* theme.ts reads Obsidian's colours through this element */
+.mmv-view .mmv-probe {
+  display: none;
+}
+
+/* TOUCH: on a phone or a tablet the "+" buttons, the collapse ring and the count badge take a 36 px tap, drawn exactly as
+   before (an invisible margin around the same circle); the selection bar's buttons grow to 36 px */
+.is-mobile .mmv-view .mm-plus::before {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+}
+.is-mobile .mmv-view .mm-ring {
+  width: 36px;
+  height: 36px;
+  margin: -6px 0 0 -6px;
+}
+.is-mobile .mmv-view .mm-ring::before {
+  left: 8px;
+  top: 8px;
+}
+.is-mobile .mmv-view .mm-ring::after {
+  left: 12px;
+  top: 12px;
+}
+.is-mobile .mmv-view .mm-badge::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 18px;
+}
+.is-mobile .mmv-view .mm-selbar button {
+  height: 36px;
+}
+.is-mobile .mmv-view .mm-selbar .mm-selbar-clear {
+  width: 36px;
+  line-height: 36px;
+}
+
+/* the selection bar (two or more selected nodes) stays clear of Obsidian's status bar on a computer and of its floating
+   navigation bar on a phone, both fixed to the bottom of the window */
+body:not(.is-mobile) .mmv-view .mm-root .mm-selbar {
+  bottom: 44px;
+}
+.is-phone .mmv-view .mm-root .mm-selbar {
+  bottom: calc(var(--navbar-height, 48px) + var(--navbar-bottom-offset, 12px) + 12px);
+}

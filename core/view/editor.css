@@ -1,0 +1,346 @@
+/* Mindslate editor styles (view/editor.ts). Every rule is scoped under .mm-root so the sheet can
+   be imported into any page without leaking; the class names are the ones the renderer writes.
+   The font sizes, paddings and colours repeat render/theme.ts: keep both in step.
+
+   THEMING: every colour is a custom property read with the dark theme's own value as its fallback,
+   `var(--mm-canvas, #0E1526)`. The sheet never defines them, so a page that sets none gets exactly the
+   dark look; a host themes the map by setting them on any ancestor of the mount (the Obsidian plugin maps
+   them to Obsidian's variables). The colours the editor paints from script (the branch palette, the
+   selection colour of the ghost, the drop preview and the root's "+" buttons, a collapsed root's badge)
+   are EditorOptions.colors / EditorHandle.setColors (render/theme.ts MapColors).
+     --mm-canvas          the canvas (also the outline of the "+" buttons and the cover of a dragged connector)
+     --mm-dot             the dot grid
+     --mm-text            the text colour of the mount
+     --mm-root-fill       the root's box          --mm-ring-fill   the fill of a collapse ring (default: --mm-root-fill)
+     --mm-root-text, --mm-text-1, --mm-text-2     the labels of the root, of level 1, of deeper levels
+     --mm-caret           the text caret
+     --mm-accent          the selection: rings, the drop target, the insertion bar, the marquee, the ghost
+     --mm-accent-fill     a drop target's fill    --mm-accent-halo   the focus halo   --mm-accent-wash   the marquee's fill
+     --mm-text-selection  selected text in a label being edited
+     --mm-on-accent       text and glyphs on a coloured fill (the ghost chip, a count badge, a hovered "+")
+     --mm-ghost-back      the second card of a dragged group    --mm-shadow   the ghost chip's shadow
+     --mm-root-badge      a collapsed root's badge (when no --mm-c is set)
+     --mm-root-badge-text its numerals (default: --mm-canvas)
+     --mm-plus-fill, --mm-plus-border             the "+" buttons (the border only where color-mix is missing)
+     --mm-bar-fill, --mm-bar-border, --mm-bar-shadow, --mm-bar-text, --mm-bar-strong, --mm-bar-sep,
+     --mm-bar-hover, --mm-bar-muted, --mm-bar-disabled, --mm-bar-danger, --mm-bar-danger-fill
+                          the selection bar
+   --mm-c (a branch colour) and --mm-sw (a stroke width) are written by the renderer on single elements. */
+.mm-root {
+  /* sentinel: view/editor.ts reads it to know this sheet applies (a mount that runs before the sheet applies
+     measures its labels unstyled, so the editor re-measures the map once it sees this) */
+  --mm-editor-css: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  /* clip, not hidden: an overflow:hidden box is still a scroll container, and Chrome scrolls it to
+     reveal the caret after every insertText; the map must only ever move through its transform */
+  overflow: hidden;
+  overflow: clip;
+  background: var(--mm-canvas, #0E1526);
+  color: var(--mm-text, #EEF1F7);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: normal;
+  text-align: left;
+}
+/* a container without a height (height: auto, nothing inside gives it one): view/editor.ts adds this class so the map
+   is not 0 px tall */
+.mm-root.mm-no-height {
+  min-height: 240px;
+}
+.mm-root, .mm-root * { box-sizing: content-box; }
+.mm-root .mm-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  overflow: clip;
+  outline: none;
+  cursor: default;
+  touch-action: none;
+  background-color: var(--mm-canvas, #0E1526);
+  background-image: radial-gradient(circle at center, var(--mm-dot, #26324B) 1.15px, transparent 1.5px);
+  background-size: 22px 22px;
+  background-position: 0 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.mm-root .mm-viewport.mm-panning { cursor: grabbing; }
+/* a node is being dragged (see input/dragdrop.ts): grabbing cursor everywhere, the moved subtree and its connectors
+   fade, a ghost chip follows the pointer, the prospective parent gets a ring and an insertion bar marks the slot */
+.mm-root .mm-viewport.mm-drag, .mm-root .mm-viewport.mm-drag * { cursor: grabbing; }
+.mm-root .mm-node.mm-dragging, .mm-root .mm-edges path.mm-dragging { opacity: 0.35; }
+.mm-root .mm-node.mm-drop-parent { box-shadow: 0 0 0 2px var(--mm-accent, #5B9BFF); }
+.mm-root .mm-node.mm-d1.mm-drop-parent, .mm-root .mm-node.mm-d2.mm-drop-parent { background: var(--mm-accent-fill, rgba(91, 155, 255, 0.14)); }
+.mm-root .mm-ghost {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  max-width: 300px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font: 600 13px/18px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: var(--mm-on-accent, #fff);
+  background: var(--mm-accent, #5B9BFF);
+  box-shadow: 0 6px 18px var(--mm-shadow, rgba(0, 0, 0, 0.45));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.mm-root .mm-drop-bar { fill: var(--mm-accent, #5B9BFF); }
+.mm-root .mm-drop-link, .mm-root .mm-plus-link { fill: none; stroke-width: 2; stroke-dasharray: 6 5; stroke-linecap: round; opacity: 0.9; }
+/* a group of selected nodes in flight: "3 nodes" on the selection colour, a second card peeking out behind it */
+.mm-root .mm-ghost.mm-ghost-multi { box-shadow: 4px 4px 0 0 var(--mm-ghost-back, #2F4F86), 0 6px 18px var(--mm-shadow, rgba(0, 0, 0, 0.45)); }
+/* the connector INTO a dragged level-2+ node shares its <path> with its siblings' segments: this cover in the canvas
+   colour at 65% over that one segment looks like the subtree's opacity .35 */
+.mm-root .mm-drop-cover { fill: none; stroke: var(--mm-canvas, #0E1526); opacity: 0.65; stroke-linecap: butt; }
+.mm-root .mm-world { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; }
+.mm-root .mm-edges { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }
+.mm-root .mm-edges path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.mm-root .mm-node {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  border-radius: 6px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.mm-root .mm-node.mm-d0 { background: var(--mm-root-fill, #2A3448); border-radius: 12px; padding: 13px 22px; }
+.mm-root .mm-node.mm-d1, .mm-root .mm-node.mm-d2 { padding: 3px 6px; }
+.mm-root .mm-label, .mm-root .mm-m {
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  width: max-content;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.mm-root .mm-label { outline: none; caret-color: var(--mm-caret, #fff); min-width: 12px; }
+.mm-root .mm-d0 .mm-label, .mm-root .mm-m.mm-d0 { font: 600 28px/36px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--mm-root-text, #FFFFFF); max-width: 440px; min-height: 36px; }
+.mm-root .mm-d1 .mm-label, .mm-root .mm-m.mm-d1 { font: 400 22px/30px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--mm-text-1, #EEF1F7); max-width: 520px; min-height: 30px; }
+.mm-root .mm-d2 .mm-label, .mm-root .mm-m.mm-d2 { font: 400 20px/27px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--mm-text-2, #DCE1EA); max-width: 520px; min-height: 27px; }
+.mm-root .mm-node.mm-selected { box-shadow: 0 0 0 2px var(--mm-accent, #5B9BFF); }
+/* keyboard focus on the map: the selection ring gets a soft halo so focus is visible (unfocused: plain ring) */
+.mm-root .mm-viewport:focus-visible .mm-node.mm-selected { box-shadow: 0 0 0 2px var(--mm-accent, #5B9BFF), 0 0 0 5px var(--mm-accent-halo, rgba(91, 155, 255, 0.35)); }
+/* MULTI-SELECTION (view/editor.ts): every other selected node shows the same selection ring; while two or more nodes
+   are selected the primary one (the node the keyboard acts on) always keeps the halo, so it can be told apart */
+.mm-root .mm-node.mm-multi { box-shadow: 0 0 0 2px var(--mm-accent, #5B9BFF); }
+.mm-root .mm-viewport.mm-multi-on .mm-node.mm-selected { box-shadow: 0 0 0 2px var(--mm-accent, #5B9BFF), 0 0 0 5px var(--mm-accent-halo, rgba(91, 155, 255, 0.35)); }
+/* the marquee of a Shift+drag on the empty canvas, in screen space */
+.mm-root .mm-viewport.mm-marquee, .mm-root .mm-viewport.mm-marquee * { cursor: crosshair; }
+.mm-root .mm-marquee-box {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  border: 1px solid var(--mm-accent, #5B9BFF);
+  border-radius: 2px;
+  background: var(--mm-accent-wash, rgba(91, 155, 255, 0.12));
+  pointer-events: none;
+}
+.mm-root .mm-marquee-box[hidden] { display: none; }
+.mm-root .mm-node.mm-editing .mm-label { user-select: text; -webkit-user-select: text; cursor: text; }
+.mm-root .mm-node.mm-editing .mm-label::selection { background: var(--mm-text-selection, rgba(91, 155, 255, 0.45)); }
+/* Collapse handles (render/handles.ts): children of their node's element, so they move, fade and hover with it.
+   Collapse is view state: a click never adds an undo step and never changes the file. Both handles toggle on the
+   release of a press that stayed put (view/editor.ts); .mm-pressed marks the one held.
+   RING on an expanded node with visible children (never the root): a 24 px circular hit area centred on the end of
+   the 20 px stub, showing the ring measured on the Whimsical reference: 20 px across with a 4 px stroke in
+   the branch colour (--mm-c, as currentColor), filled with the root-box slate #2A3448 (it hides the line under it).
+   It shows while the node is hovered (the editor toggles mm-hover on the node; the ring and the hover bridge are
+   inside the node, so hovering them counts), while the node is selected and while the ring is held. The fade-out
+   waits 60 ms (a diagonal move from the node onto the ring may cut a corner past the hover bridge). */
+.mm-root .mm-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--mm-c, var(--mm-accent, #5B9BFF));
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease-out 60ms;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.mm-root .mm-ring::before, .mm-root .mm-ring::after {
+  content: '';
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 50%;
+  pointer-events: none;
+  /* a hidden ring paints nothing: its stroke and fill switch to visibility: hidden once the fade-out is over (60 ms
+     delay + 120 ms), so the hundreds of hidden rings of a big map add no paint to a pan frame; the ring element
+     itself stays hit-testable (pointing at its spot shows it) and keeps its opacity transition */
+  visibility: hidden;
+  transition: visibility 0s linear 180ms;
+}
+.mm-root .mm-ring::before { left: 2px; top: 2px; width: 20px; height: 20px; border: 4px solid currentColor; background: var(--mm-ring-fill, var(--mm-root-fill, #2A3448)); }
+/* the pointer on the ring (or the ring held): the fill becomes the branch colour at 25 % over the slate fill */
+.mm-root .mm-ring::after { left: 6px; top: 6px; width: 12px; height: 12px; background: currentColor; opacity: 0; }
+.mm-root .mm-ring:hover::after, .mm-root .mm-ring.mm-pressed::after { opacity: 0.25; }
+.mm-root .mm-node.mm-hover > .mm-ring, .mm-root .mm-node.mm-selected > .mm-ring, .mm-root .mm-node > .mm-ring.mm-pressed { opacity: 1; transition-delay: 0s; }
+.mm-root .mm-node.mm-hover > .mm-ring::before, .mm-root .mm-node.mm-hover > .mm-ring::after,
+.mm-root .mm-node.mm-selected > .mm-ring::before, .mm-root .mm-node.mm-selected > .mm-ring::after,
+.mm-root .mm-node > .mm-ring.mm-pressed::before, .mm-root .mm-node > .mm-ring.mm-pressed::after { visibility: visible; transition-delay: 0s; }
+/* HOVER BRIDGE: the 8 px between a node's box and its ring belong to the node for HOVER, so a pointer crossing them
+   slowly keeps the node hovered and its ring shown. Painted under the ring (the ring element comes later), which
+   keeps its whole 24 px hit circle; only for pointers that hover (on a touch screen a hidden ring's spot stays empty
+   canvas). A press or a double-click on the bridge is empty canvas (view/editor.ts pressedNode: a drag there pans, a
+   click never selects or edits). */
+@media (hover: hover) {
+  .mm-root .mm-node.mm-has-ring::before { content: ''; position: absolute; left: 100%; top: 50%; width: 12px; height: 24px; margin-top: -12px; }
+}
+/* no ring during a node drag, not even the dragged (selected) node's own */
+.mm-root .mm-viewport.mm-drag .mm-ring { opacity: 0; transition: none; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) {
+  .mm-root .mm-ring, .mm-root .mm-ring::before, .mm-root .mm-ring::after { transition: none; }
+}
+/* BADGE on a collapsed node: a 12 px stub (::before, the stroke width --mm-sw of the fan it stands in for) then a 20 px
+   circle in the branch colour with the count of ALL hidden descendants; 3+ digits grow it into a pill (radius 10).
+   Always shown. */
+.mm-root .mm-badge {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 10px;
+  background: var(--mm-c, var(--mm-root-badge, #9fb0d0));
+  color: var(--mm-on-accent, #fff);
+  /* longhands, not the font shorthand: the shorthand resets font-variant-numeric, and a minifier may reorder them */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.mm-root .mm-badge.mm-pill { width: auto; min-width: 20px; padding: 0 6px; }
+.mm-root .mm-badge::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: calc(50% - var(--mm-sw, 3px) / 2);
+  width: 12px;
+  height: var(--mm-sw, 3px);
+  background: var(--mm-c, var(--mm-root-badge, #9fb0d0));
+}
+.mm-root .mm-badge:hover, .mm-root .mm-badge.mm-pressed { filter: brightness(1.15); }
+/* the root has no branch colour: its badge is the light slate pill colour, which needs dark numerals */
+.mm-root .mm-node.mm-d0 > .mm-badge { color: var(--mm-root-badge-text, var(--mm-canvas, #0E1526)); }
+/* "+" BUTTONS of a single selected node (render/plus.ts places them where Tab's child and Enter's sibling appear): world
+   coordinates, above the nodes, never part of the layout. An 18 px circle, a dark fill a little lighter than the canvas,
+   a thin border and the plus in the node's branch colour (--mm-c; the root's: the selection blue); the pointer on it
+   (or a press) fills it with that colour and turns the plus white, and the editor draws a dashed preview connector to it.
+   They fade in; while hidden they take no pointer. */
+.mm-root .mm-plus-layer { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 1; }
+.mm-root .mm-plus {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--mm-plus-border, rgba(91, 155, 255, 0.6));
+  border-color: color-mix(in srgb, var(--mm-c, var(--mm-accent, #5B9BFF)) 62%, transparent);
+  background: var(--mm-plus-fill, #18223A);
+  color: var(--mm-c, var(--mm-accent, #5B9BFF));
+  box-shadow: 0 0 0 2px var(--mm-canvas, #0E1526);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 120ms ease-out, visibility 0s linear 120ms, background-color 80ms ease-out, border-color 80ms ease-out;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.mm-root .mm-plus::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(currentColor, currentColor) center / 8px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) center / 2px 8px no-repeat;
+}
+.mm-root .mm-plus.mm-on { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 120ms ease-out, visibility 0s, background-color 80ms ease-out, border-color 80ms ease-out; }
+.mm-root .mm-plus.mm-on:hover, .mm-root .mm-plus.mm-pressed { background: var(--mm-c, var(--mm-accent, #5B9BFF)); border-color: var(--mm-c, var(--mm-accent, #5B9BFF)); color: var(--mm-on-accent, #FFFFFF); }
+.mm-root .mm-plus-link { opacity: 0.6; }
+/* SELECTION BAR (two or more selected nodes): a dark floating bar at the bottom centre of the map */
+.mm-root .mm-selbar {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  box-sizing: border-box;
+  max-width: calc(100% - 24px);
+  padding: 4px;
+  border: 1px solid var(--mm-bar-border, #33425F);
+  border-radius: 10px;
+  background: var(--mm-bar-fill, #141C30);
+  box-shadow: 0 10px 30px var(--mm-bar-shadow, rgba(0, 0, 0, 0.5));
+  color: var(--mm-bar-text, #DCE1EA);
+  font: 500 13px/18px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 8px);
+  transition: opacity 140ms ease-out, transform 140ms ease-out, visibility 0s linear 140ms;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.mm-root .mm-selbar.mm-on { opacity: 1; visibility: visible; transform: translate(-50%, 0); transition: opacity 140ms ease-out, transform 140ms ease-out, visibility 0s; }
+.mm-root .mm-selbar-count { padding: 0 8px 0 10px; color: var(--mm-bar-strong, #FFFFFF); font-weight: 600; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; }
+.mm-root .mm-selbar-sep { flex: none; width: 1px; height: 18px; margin: 0 4px; background: var(--mm-bar-sep, #2A3752); }
+.mm-root .mm-selbar button {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  height: 28px;
+  margin: 0;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--mm-bar-text, #DCE1EA);
+  font: inherit;
+  cursor: pointer;
+  outline: none;
+}
+.mm-root .mm-selbar button[hidden] { display: none; }
+.mm-root .mm-selbar button:hover { background: var(--mm-bar-hover, #22304A); color: var(--mm-bar-strong, #FFFFFF); }
+.mm-root .mm-selbar .mm-selbar-delete:hover { background: var(--mm-bar-danger-fill, rgba(224, 80, 95, 0.18)); color: var(--mm-bar-danger, #FF8F9B); }
+.mm-root .mm-selbar .mm-selbar-delete[aria-disabled='true'] { color: var(--mm-bar-disabled, #6B7A99); background: transparent; cursor: default; }
+.mm-root .mm-selbar .mm-selbar-clear { width: 28px; padding: 0; font-size: 17px; line-height: 28px; color: var(--mm-bar-muted, #9FB0D0); }
+@media (prefers-reduced-motion: reduce) {
+  .mm-root .mm-plus, .mm-root .mm-plus.mm-on, .mm-root .mm-selbar, .mm-root .mm-selbar.mm-on { transition: none; }
+}
+.mm-root .mm-measure { position: absolute; left: 0; top: 0; width: 0; height: 0; visibility: hidden; pointer-events: none; contain: layout style; overflow: visible; }
+.mm-root .mm-m { position: absolute; left: 0; top: 0; }
