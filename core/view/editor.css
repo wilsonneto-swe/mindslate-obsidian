@@ -35,7 +35,6 @@
   height: 100%;
   /* clip, not hidden: an overflow:hidden box is still a scroll container, and Chrome scrolls it to
      reveal the caret after every insertText; the map must only ever move through its transform */
-  overflow: hidden;
   overflow: clip;
   background: var(--mm-canvas, #0E1526);
   color: var(--mm-text, #EEF1F7);
@@ -54,7 +53,6 @@
 .mm-root .mm-viewport {
   position: absolute;
   inset: 0;
-  overflow: hidden;
   overflow: clip;
   outline: none;
   cursor: default;
@@ -64,6 +62,13 @@
   background-size: 22px 22px;
   background-position: 0 0;
   -webkit-tap-highlight-color: transparent;
+}
+/* a browser without overflow: clip (Safari before 16) clips with hidden instead */
+@supports not (overflow: clip) {
+  .mm-root,
+  .mm-root .mm-viewport {
+    overflow: hidden;
+  }
 }
 .mm-root .mm-viewport.mm-panning { cursor: grabbing; }
 /* a node is being dragged (see input/dragdrop.ts): grabbing cursor everywhere, the moved subtree and its connectors

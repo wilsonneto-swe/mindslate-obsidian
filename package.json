@@ -1,14 +1,11 @@
 {
   "name": "mindslate",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Open a note as a keyboard-first mind map and edit it in place. The note stays an ordinary heading with a nested list.",
   "author": "Wilson Neto",
   "license": "MIT",
   "type": "module",
-  "engines": {
-    "node": ">=24"
-  },
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch --mode development",
@@ -28,6 +25,11 @@
     "typescript-eslint": "8.72.1",
     "vite": "8.3.5",
     "vitest": "5.0.5"
+  },
+  "overrides": {
+    "eslint-plugin-obsidianmd": {
+      "obsidian": "$obsidian"
+    }
   },
   "repository": {
     "type": "git",

@@ -7,22 +7,23 @@
  *    a plain pass-through to the original instead. Either way the plugin's code no longer runs.
  */
 // The methods patched are of any shape: the wrapper passes `this` and every argument through unchanged.
-type AnyMethod = (this: any, ...args: any[]) => any;
+type Passing = (this: unknown, ...args: unknown[]) => unknown;
 
-export function patchMethod<T extends object, K extends keyof T>(target: T, key: K, wrap: (original: T[K] & AnyMethod) => AnyMethod): () => void {
-  const original = target[key] as T[K] & AnyMethod;
+export function patchMethod<T extends object, K extends keyof T>(target: T, key: K, wrap: (original: T[K]) => T[K]): () => void {
+  const original = target[key];
   if (typeof original !== 'function') throw new Error(`patchMethod: ${String(key)} is not a method`);
-  const replacement = wrap(original);
+  const replacement = wrap(original) as unknown as Passing;
+  const passOn = original as unknown as Passing;
   let active = true;
-  const patched: AnyMethod = function (this: unknown, ...args: unknown[]): unknown {
-    return active ? replacement.apply(this, args) : original.apply(this, args);
+  const patched: Passing = function (this: unknown, ...args: unknown[]): unknown {
+    return active ? replacement.apply(this, args) : passOn.apply(this, args);
   };
-  target[key] = patched as T[K];
+  target[key] = patched as unknown as T[K];
   let undone = false;
   return () => {
     if (undone) return;
     undone = true;
     active = false;
-    if (target[key] === (patched as T[K])) target[key] = original;
+    if (target[key] === (patched as unknown as T[K])) target[key] = original;
   };
 }

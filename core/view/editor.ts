@@ -215,6 +215,12 @@ interface MdCache {
 
 const nonNull = <X>(x: X | null | undefined): x is X => x !== null && x !== undefined;
 
+/**
+ * A shadow root, told by its node type rather than `instanceof ShadowRoot`: that constructor belongs to one window, and
+ * an editor mounted in another one (a popout window, an iframe) has nodes of that window's classes.
+ */
+const isShadowRoot = (n: Node): n is ShadowRoot => n.nodeType === 11 /* DOCUMENT_FRAGMENT_NODE */ && 'host' in n;
+
 export function mountEditor(container: HTMLElement, options: EditorOptions = {}): EditorHandle {
   const theme = THEME;
   const instance = ++instanceSeq;
@@ -1578,7 +1584,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions = {})
   /** The element under a client point (in this editor's shadow root when it is mounted in one). */
   function hitTest(x: number, y: number): Element | null {
     const host = rootEl.getRootNode();
-    return (host instanceof Document || host instanceof ShadowRoot ? host : rootEl.ownerDocument).elementFromPoint(x, y);
+    return (isShadowRoot(host) ? host : rootEl.ownerDocument).elementFromPoint(x, y);
   }
   /** Where a node is: [child index, text] from the root down (finds it again after a re-parse gave every node a new id). */
   function addressOf(id: string): Array<readonly [number, string]> {
@@ -2178,7 +2184,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions = {})
     const path = e.composedPath();
     if (path.includes(viewport)) return true;
     const r = rootEl.getRootNode();
-    return r instanceof ShadowRoot && path.includes(r.host); // a closed shadow root hides the viewport from the document
+    return isShadowRoot(r) && path.includes(r.host); // a closed shadow root hides the viewport from the document
   };
   const strayRelease = (e: PointerEvent): void => {
     const id = e.pointerId;

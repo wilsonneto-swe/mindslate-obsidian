@@ -265,7 +265,7 @@ export default class MindslatePlugin extends Plugin {
     };
     this.unpatch = patchMethod(WorkspaceLeaf.prototype, 'setViewState', (original) =>
       function (this: WorkspaceLeaf, state: ViewState, eState?: unknown): Promise<void> {
-        return original.call(this, stateFor(this, state), eState) as Promise<void>;
+        return original.call(this, stateFor(this, state), eState);
       },
     );
   }
