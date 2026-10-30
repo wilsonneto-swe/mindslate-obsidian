@@ -1,26 +1,36 @@
 {
-  "name": "obsidian-mindslate",
+  "name": "mindslate",
   "version": "0.1.0",
   "private": true,
   "description": "Open a note as a keyboard-first mind map and edit it in place. The note stays an ordinary heading with a nested list.",
   "author": "Wilson Neto",
   "license": "MIT",
   "type": "module",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/wilsonneto-swe/obsidian-mindslate.git"
+  "engines": {
+    "node": ">=24"
   },
   "scripts": {
     "build": "vite build",
-    "dev": "vite build --watch",
+    "dev": "vite build --watch --mode development",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "lint": "eslint .",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build"
   },
   "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@eslint/json": "0.14.0",
     "@types/node": "24.19.2",
+    "eslint": "9.39.5",
+    "eslint-plugin-obsidianmd": "0.4.2",
     "obsidian": "1.13.1",
     "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1",
     "vite": "8.3.5",
     "vitest": "5.0.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wilsonneto-swe/mindslate-obsidian.git"
   }
 }

@@ -9,6 +9,9 @@ import { patchMethod } from './patch.js';
 // the module main.ts gets for `obsidian` here (vitest.config.ts), imported by its path for its own types
 import { TFile, WorkspaceLeaf } from '../test/fake-obsidian.js';
 
+/** The function an object holds under a key, read without detaching a method (the tests compare identities). */
+const methodOf = (target: object, key: string): unknown => Reflect.get(target, key);
+
 describe('PATCH', () => {
   it('wraps a method, passes `this` and the arguments through, and puts the original back', () => {
     const obj = {
@@ -17,7 +20,7 @@ describe('PATCH', () => {
         return this.n + x;
       },
     };
-    const original = obj.add;
+    const original = methodOf(obj, 'add');
     const undo = patchMethod(obj, 'add', (orig) =>
       function (this: typeof obj, x: number) {
         return orig.call(this, x) * 10;
@@ -25,10 +28,10 @@ describe('PATCH', () => {
     );
     expect(obj.add(2)).toBe(30);
     undo();
-    expect(obj.add).toBe(original);
+    expect(methodOf(obj, 'add')).toBe(original);
     expect(obj.add(2)).toBe(3);
     undo(); // twice: nothing
-    expect(obj.add).toBe(original);
+    expect(methodOf(obj, 'add')).toBe(original);
   });
 
   it('a later patch of another plugin keeps working after ours is undone: ours becomes a pass-through', () => {
@@ -66,7 +69,7 @@ function pluginWith(flagged: Set<string>, layoutReady = true): { plugin: Mindsla
 
 describe('AUTO-OPEN through the patched WorkspaceLeaf.setViewState', () => {
   it('a flagged note asked for as Markdown becomes the map; others stay; Open as Markdown sticks; unload undoes it', async () => {
-    const original = WorkspaceLeaf.prototype.setViewState;
+    const original = methodOf(WorkspaceLeaf.prototype, 'setViewState');
     const { plugin, unpatch } = pluginWith(new Set(['Map.md']));
     const leaf = new WorkspaceLeaf();
     await leaf.setViewState({ type: 'markdown', state: { file: 'Map.md' } });
@@ -80,7 +83,7 @@ describe('AUTO-OPEN through the patched WorkspaceLeaf.setViewState', () => {
     await other.setViewState({ type: 'markdown', state: { file: 'Map.md' } });
     expect(other.states.at(-1)?.type).toBe(VIEW_TYPE); // ...not in another one
     unpatch();
-    expect(WorkspaceLeaf.prototype.setViewState).toBe(original);
+    expect(methodOf(WorkspaceLeaf.prototype, 'setViewState')).toBe(original);
     await other.setViewState({ type: 'markdown', state: { file: 'Map.md' } });
     expect(other.states.at(-1)?.type).toBe('markdown');
   });

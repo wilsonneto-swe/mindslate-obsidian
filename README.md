@@ -39,7 +39,7 @@ GitHub) it stays a plain outline.
   <img src=".github/assets/mobile-1-map-dark.png" width="225" alt="The same map on a phone, in the dark theme, with Undo, Redo, Delete and Fit buttons in the header">
 </p>
 
-## Usage
+## Getting started
 
 ### Open a note as a mind map
 
@@ -98,38 +98,45 @@ tabs. Other lists (`*`, `+`, numbers, spaces) open too, and text under an item s
 
 ## Installation
 
-- **From Obsidian**: **Settings > Community plugins > Browse**, search for **Mindslate**, then **Install** and
-  **Enable**.
-- **By hand**: download `main.js`, `manifest.json` and `styles.css` from the
-  [latest release](https://github.com/wilsonneto-swe/obsidian-mindslate/releases/latest) into
-  `<your vault>/.obsidian/plugins/mindslate/`, then enable **Mindslate** in **Settings > Community plugins**.
+- **From Community plugins** (once Mindslate is listed in the directory): Settings > Community plugins > Browse,
+  search for "Mindslate", then select **Install** and **Enable**.
+- **Manually**: download `main.js`, `manifest.json` and `styles.css` from the
+  [latest release](https://github.com/wilsonneto-swe/mindslate-obsidian/releases/latest) into
+  `<vault>/.obsidian/plugins/mindslate/`, reload Obsidian, then enable **Mindslate** in Settings > Community
+  plugins.
+- **On your phone**: install it from Community plugins there too, or let Obsidian Sync bring it (turn on
+  "Installed community plugins" and "Active community plugin list" in Settings > Sync on both devices).
 
-## Compatibility
-
-Obsidian 1.13.7 or later, on desktop (macOS, Windows, Linux) and mobile (iOS, iPadOS, Android). It has been tested
-with Obsidian 1.13.7 and 1.14.5 on macOS, and in Obsidian's mobile emulation.
+Mindslate needs Obsidian 1.13.7 or later and runs on desktop (macOS, Windows, Linux) and mobile (iOS, iPadOS,
+Android). It has been tested with Obsidian 1.13.7 and 1.14.5 on macOS, and in Obsidian's mobile emulation.
 
 ## Privacy
 
-Everything stays in your vault. Mindslate makes no network requests and collects nothing. It writes only the notes
-you edit as maps (or flag, create or rename with its commands) and its own data file, which keeps each map's folds,
-selection and zoom.
+Mindslate works offline. It makes no network requests, has no telemetry or ads, and needs no account. It reads and
+writes only the notes you open as maps (and the notes its commands flag, create or rename), and keeps each map's
+folds, selection and zoom in the plugin's own folder (`data.json`). It never reads or writes files outside your
+vault.
 
-## Development
-
-This repository holds the plugin (`src/`) and the Mindslate editor core it bundles (`core/`).
+## Building from source
 
 ```
 npm install
-npm run build      # main.js and styles.css at the repository root
-npm test           # the plugin's unit tests
-npm run typecheck
+npm run build      # main.js and styles.css, next to manifest.json
+npm run dev        # the same, rebuilt on every change
+npm run check      # Obsidian's lint rules, type checks, tests and the build
 ```
 
-For a test vault, copy `main.js`, `manifest.json` and `styles.css` into `<vault>/.obsidian/plugins/mindslate/`. A
-version tag (`git tag 0.1.0 && git push origin 0.1.0`, the bare version in `manifest.json`) publishes the release
-Obsidian installs from (`.github/workflows/release.yml`).
+The plugin's code is in `src/`; `core/` is the Mindslate editor it bundles (the Markdown reader and writer, the
+layout, the rendering and the keyboard and pointer input). Copy `main.js`, `manifest.json` and `styles.css` into
+`<vault>/.obsidian/plugins/mindslate/`. Releases are built by GitHub Actions when a version tag is pushed
+(`.github/workflows/release.yml`), with build attestations.
+
+## Feedback
+
+Questions, ideas and bugs: [open an issue](https://github.com/wilsonneto-swe/mindslate-obsidian/issues). The plugin
+is developed together with its tests in a separate repository and exported here for each release, so a pull request
+is welcome and ships with the next version.
 
 ## License
 
-[MIT](LICENSE)
+MIT, see [LICENSE](LICENSE).
