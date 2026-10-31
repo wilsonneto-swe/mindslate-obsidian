@@ -48,6 +48,11 @@ export class Scope {
   register(): void {}
 }
 export class Menu {}
+export class Keymap {
+  static isModEvent(): boolean {
+    return false;
+  }
+}
 export class Notice {
   constructor(readonly message: string) {}
   hide(): void {}

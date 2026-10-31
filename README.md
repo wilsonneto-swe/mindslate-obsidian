@@ -45,14 +45,17 @@ GitHub) it stays a plain outline.
 
 - **Command palette** (Cmd/Ctrl+P): **Mindslate: Open as mind map**, or **Open as mind map in a split** to keep the
   Markdown view beside it.
-- **File menu**: right-click a note in the file explorer, or open the tab's **⋯** menu, then **Open as mind map**.
+- **Right-click**: a note in the file explorer, or anywhere in the note's text, or open the tab's **⋯** menu, then
+  **Open as mind map**.
 - **Back to Markdown**: the page button in the map's header, **⋯ > Open as Markdown**, or the command
   **Mindslate: Open as Markdown**.
 - **Always as a map**: the command **Mindslate: Always open this note as a mind map** (or **Always open as mind
   map** in the note's menu) adds `mindslate: map` to the note's properties and changes nothing else. Run it again to
   take the property out. In a tab where you choose **Open as Markdown**, that note stays Markdown.
-- **New mind map** (a command, and the map button in the ribbon) creates a note where Obsidian puts new notes and
-  opens it as a map with its root ready to type. The note takes its name from the root.
+- **New mind map**: right-click a folder in the file explorer (or the empty space below the files, for the vault's
+  top folder) and choose **New mind map** to make the map in that folder. The command and the map button in the
+  ribbon make it where Obsidian puts new notes. The map opens with its root ready to type, and the note takes its name
+  from the root.
 - **Fit the map to the view** is a command too; give it a hotkey in **Settings > Hotkeys** if you like.
 
 ### Keys
