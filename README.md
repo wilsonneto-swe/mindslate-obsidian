@@ -45,8 +45,8 @@ GitHub) it stays a plain outline.
 
 - **Command palette** (Cmd/Ctrl+P): **Mindslate: Open as mind map**, or **Open as mind map in a split** to keep the
   Markdown view beside it.
-- **Right-click**: a note in the file explorer, or anywhere in the note's text, or open the tab's **⋯** menu, then
-  **Open as mind map**.
+- **Right-click**: a note in the file explorer, or the note's text while you edit it (Live Preview or Source mode;
+  reading view has no such menu), or open the tab's **⋯** menu, then **Open as mind map**.
 - **Back to Markdown**: the page button in the map's header, **⋯ > Open as Markdown**, or the command
   **Mindslate: Open as Markdown**.
 - **Always as a map**: the command **Mindslate: Always open this note as a mind map** (or **Always open as mind
