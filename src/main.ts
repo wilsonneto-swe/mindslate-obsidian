@@ -3,14 +3,15 @@
  * ordinary Markdown note. The core editor (core/) draws and edits the map; this plugin hosts it in a view
  * (view.ts) and connects it to Obsidian:
  *  - OPEN: "Open as mind map" (the same tab), "Open as mind map in a split" (beside the Markdown view), "Open as
- *    Markdown" (commands, the file menu, the view's "More options" menu, the map's header button); opening a note as a
- *    map never writes it.
+ *    Markdown" (commands, the file menu, the view's "More options" menu, the editor's context menu, the map's header
+ *    button); opening a note as a map never writes it.
  *  - FLAG (flag.ts): "Always open this note as a mind map" toggles `mindslate: map` in the note's frontmatter,
  *    a minimal edit through vault.process; AUTO-OPEN (auto-open.ts) then opens it as a map wherever Obsidian opens it,
  *    through a hand-written patch of WorkspaceLeaf.setViewState (patch.ts), undone on unload. STICKY-MARKDOWN: a tab
  *    where the user chose Markdown keeps Markdown for that note.
- *  - NEW: "New mind map" (command and ribbon) creates a flagged note where Obsidian puts new notes and opens it as a map
- *    with the root ready to type; NAME-FROM-ROOT (names.ts) names the note after it.
+ *  - NEW: "New mind map" (command and ribbon) creates a flagged note where Obsidian puts new notes, or (a folder's menu
+ *    in the file explorer) in that folder, and opens it as a map with the root ready to type; NAME-FROM-ROOT (names.ts)
+ *    names the note after it.
  *  - VIEW-STATE (view-state.ts): folds, selection and camera per note in the plugin's data, following renames and
  *    deletes. THEME (theme.ts): live on `css-change`.
  */
@@ -18,7 +19,7 @@ import type { ViewSnapshot } from '../core/index.js';
 // the core's stylesheet (moved under the view's class at build time, vite.config.ts) and the plugin's: one styles.css
 import '../core/view/editor.css';
 import './styles.css';
-import { MarkdownView, Notice, Plugin, TFile, WorkspaceLeaf, normalizePath, type ViewState } from 'obsidian';
+import { Keymap, MarkdownView, Notice, Plugin, TFile, TFolder, WorkspaceLeaf, normalizePath, type PaneType, type ViewState } from 'obsidian';
 import { opensAsMap, renamedPath, type Choice } from './auto-open.js';
 import { FLAG_KEY, FLAG_VALUE, ICON, NEW_MAP_NAME, VIEW_TYPE } from './constants.js';
 import { flaggedIn, hasFlag, setFlag } from './flag.js';
@@ -134,6 +135,20 @@ export default class MindslatePlugin extends Plugin {
 
     this.registerEvent(
       this.app.workspace.on('file-menu', (menu, file, source, leaf) => {
+        // NEW from a folder's menu in the file explorer (its empty space gives the vault's own folder): the map goes in
+        // that folder, beside Obsidian's "New note" and "New canvas", and as they do, Mod+click opens it in a new tab
+        if (file instanceof TFolder) {
+          if (source === 'file-explorer-context-menu') {
+            menu.addItem((i) =>
+              i
+                .setSection('action-primary')
+                .setTitle('New mind map')
+                .setIcon(ICON)
+                .onClick((evt) => void this.newMap(file, Keymap.isModEvent(evt))),
+            );
+          }
+          return;
+        }
         if (!(file instanceof TFile) || file.extension !== 'md') return;
         const view = leaf?.view;
         if (view instanceof MindMapView && view.file === file) {
@@ -157,6 +172,21 @@ export default class MindslatePlugin extends Plugin {
             .setIcon(ICON)
             .setChecked(this.isFlagged(file))
             .onClick(() => void this.toggleFlag(file)),
+        );
+      }),
+    );
+    // OPEN from the note's text: a right-click in its Markdown tab (editing view) opens the note as a map in that tab
+    this.registerEvent(
+      this.app.workspace.on('editor-menu', (menu, _editor, info) => {
+        const file = info.file;
+        if (!(info instanceof MarkdownView) || !(file instanceof TFile) || file.extension !== 'md') return;
+        const leaf = info.leaf;
+        menu.addItem((i) =>
+          i
+            .setSection('view')
+            .setTitle('Open as mind map')
+            .setIcon(ICON)
+            .onClick(() => void this.openAsMap(leaf, file)),
         );
       }),
     );
@@ -303,15 +333,18 @@ export default class MindslatePlugin extends Plugin {
 
   // ---------- new maps ----------
 
-  /** "New mind map": a flagged note where new notes go, open as a map, its root ready to be typed (NAME-FROM-ROOT). */
-  async newMap(): Promise<void> {
-    const source = this.app.workspace.getActiveFile()?.path ?? '';
-    const folder = this.app.fileManager.getNewFileParent(source);
-    const dir = folder.isRoot() ? '' : folder.path + '/';
+  /**
+   * "New mind map": a flagged note, open as a map, its root ready to be typed (NAME-FROM-ROOT). It goes in `folder` (a
+   * folder's menu) or else where Obsidian puts new notes (the command, the ribbon); `where` is the tab, as getLeaf takes
+   * it (false: the current tab, as Obsidian's "New note").
+   */
+  async newMap(folder?: TFolder, where: PaneType | boolean = false): Promise<void> {
+    const parent = folder ?? this.app.fileManager.getNewFileParent(this.app.workspace.getActiveFile()?.path ?? '');
+    const dir = parent.isRoot() ? '' : parent.path + '/';
     const base = untitledName((name) => this.app.vault.getAbstractFileByPath(normalizePath(`${dir}${name}.md`)) !== null, NEW_MAP_NAME);
     const file = await this.app.vault.create(normalizePath(`${dir}${base}.md`), setFlag('', true));
     this.freshMaps.add(file.path);
-    const leaf = this.app.workspace.getLeaf(false);
+    const leaf = this.app.workspace.getLeaf(where);
     await this.openAsMap(leaf, file);
     if (leaf.view instanceof MindMapView) leaf.view.map?.edit(undefined, { replace: true });
   }
