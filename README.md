@@ -101,6 +101,9 @@ mindslate: map
 The `# heading` is the root (a note without one shows its file name instead) and each list item is a node, nested by
 tabs. Other lists (`*`, `+`, numbers, spaces) open too, and text under an item stays with it.
 
+More maps to open are in [`examples/`](examples): study notes on sharding (114 nodes), a trip plan, a project plan
+and meeting notes. Copy the folder into your vault; each note opens as a map.
+
 ## For AI agents
 
 The agent skill in [`skills/markdown-mind-map`](skills/markdown-mind-map) teaches an AI agent (Claude Code, the Claude
