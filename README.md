@@ -198,6 +198,11 @@ Found a bug? [Open an issue](https://github.com/wilsonneto-swe/mindslate-obsidia
 developed together with its tests in a separate repository and exported here for each release, so a pull request is
 welcome and ships with the next version: [CONTRIBUTING.md](CONTRIBUTING.md) explains how.
 
+## Sponsor
+
+Mindslate is free, works offline and has no ads or accounts. If it is useful to you, you can support its development on
+[GitHub Sponsors](https://github.com/sponsors/wilsonneto-swe).
+
 ## License
 
 MIT, see [LICENSE](LICENSE).
