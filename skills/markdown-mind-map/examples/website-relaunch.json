@@ -1,0 +1,41 @@
+{
+  "text": "Website Relaunch",
+  "children": [
+    {
+      "text": "Goals",
+      "children": [
+        "> 1,000 beta sign-ups",
+        "Pages load in under 1 s\non a mid-range phone",
+        "Accessible: WCAG 2.2 AA"
+      ]
+    },
+    {
+      "text": "Research #research",
+      "children": [
+        "[[User Interviews 2026]]",
+        "Competitor review\nsee [benchmark sheet](https://example.com/benchmark)",
+        "Analytics: top 10 pages"
+      ]
+    },
+    {
+      "text": "Content",
+      "children": [
+        "Rewrite the homepage #copy",
+        "Case studies\nthree customers, one page each",
+        "Tone: follow the [[Style Guide]]"
+      ]
+    },
+    {
+      "text": "Launch",
+      "children": [
+        "[ ] Write the announcement",
+        "[x] Book the launch call",
+        "[ ] Redirect the old URLs"
+      ]
+    },
+    {
+      "text": "Risks",
+      "children": ["Search ranking drops after the move", "Content freeze slips"]
+    }
+  ]
+}

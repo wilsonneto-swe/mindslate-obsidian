@@ -33,6 +33,8 @@ GitHub) it stays a plain outline.
 - **Each map as you left it.** Folded branches, the selected node and the zoom are kept for every note.
 - **Your theme.** Light or dark, with your accent colour, also when you switch.
 - **Phones and tablets.** Undo, Redo, Delete and Fit in the view's header, and large touch targets.
+- **Maps from your AI agent.** An agent skill teaches Claude, or another agent, to write notes that open as maps
+  ([For AI agents](#for-ai-agents)).
 
 <p align="center">
   <img src=".github/assets/desktop-2-map-light.png" width="600" alt="A Weekend in Lisbon map in Obsidian's light theme, the Tram 28 node selected with its plus buttons">
@@ -99,6 +101,26 @@ mindslate: map
 The `# heading` is the root (a note without one shows its file name instead) and each list item is a node, nested by
 tabs. Other lists (`*`, `+`, numbers, spaces) open too, and text under an item stays with it.
 
+## For AI agents
+
+The agent skill in [`skills/markdown-mind-map`](skills/markdown-mind-map) teaches an AI agent (Claude Code, the Claude
+apps, or any agent that reads instructions) to make mind maps in your vault: how to plan a good map, the writing and
+escaping rules, and how to add to a map without breaking it. Its command-line tool is built from Mindslate's own
+Markdown reader and writer, so a map it writes is byte for byte what the plugin writes, and its validator prints the
+tree the map will show. In a vault where Mindslate is installed, the agent gives each new map the `mindslate: map`
+property, so the note opens as a map when you click it.
+
+Install it in Claude Code by copying the folder into your skills folder, then start a new session:
+
+```
+git clone --depth 1 https://github.com/wilsonneto-swe/mindslate-obsidian.git
+mkdir -p ~/.claude/skills && cp -R mindslate-obsidian/skills/markdown-mind-map ~/.claude/skills/
+```
+
+Then ask, for example: "Make a mind map for our team offsite (venue, agenda, budget) in my Obsidian vault." For the
+Claude apps and other agents, and more example prompts, see [skills/README.md](skills/README.md). The skill is not
+part of the plugin: Obsidian never loads it, and the plugin's releases do not include it.
+
 ## Installation
 
 - **From Community plugins** (once Mindslate is listed in the directory): Settings > Community plugins > Browse,
@@ -130,7 +152,7 @@ npm run check      # Obsidian's lint rules, type checks, tests and the build
 ```
 
 The plugin's code is in `src/`; `core/` is the Mindslate editor it bundles (the Markdown reader and writer, the
-layout, the rendering and the keyboard and pointer input). Copy `main.js`, `manifest.json` and `styles.css` into
+layout, the rendering and the keyboard and pointer input); `skills/` holds the agent skill, outside the build. Copy `main.js`, `manifest.json` and `styles.css` into
 `<vault>/.obsidian/plugins/mindslate/`. Releases are built by GitHub Actions when a version tag is pushed
 (`.github/workflows/release.yml`), with build attestations.
 
