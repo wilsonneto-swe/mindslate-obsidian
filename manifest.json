@@ -6,5 +6,6 @@
   "description": "Open a note as a keyboard-first mind map and edit it in place. The note stays an ordinary heading with a nested list.",
   "author": "Wilson Neto",
   "authorUrl": "https://github.com/wilsonneto-swe",
+  "fundingUrl": "https://github.com/sponsors/wilsonneto-swe",
   "isDesktopOnly": false
 }
