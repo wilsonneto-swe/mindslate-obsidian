@@ -4,6 +4,7 @@ import type { Eol, MapDocument, MapNode } from '../format/types.js';
 import type { History } from '../history/history.js';
 import type { DropTarget } from '../input/dragdrop.js';
 import type { Layout } from '../layout/types.js';
+import type { ElementFactory } from '../render/element.js';
 import type { MapColors } from '../render/theme.js';
 
 /** What onView reports (zoom changes only). */
@@ -55,6 +56,11 @@ export type HostKey = 'open' | 'new' | 'fit';
 export type EditorAction = 'add-child' | 'add-sibling' | 'edit' | 'delete' | 'toggle-collapse' | 'duplicate';
 
 export interface EditorOptions {
+  /**
+   * How the editor makes its HTML elements (render/element.ts ElementFactory): Obsidian's `createEl` in the plugin, the
+   * page's DOM elsewhere.
+   */
+  readonly createElement: ElementFactory;
   /** The file text (default: "# <fileName basename>" + LF). */
   readonly markdown?: string;
   /** Used for the root when the file has no H1 (R3). Default 'Untitled.md'. */

@@ -184,6 +184,7 @@ export class MindMapView extends TextFileView {
     this.conflictNotice?.hide();
     if (this.mapEditor === null) {
       this.mapEditor = mountEditor(this.contentEl, {
+        createElement: (tag) => createEl(tag),
         markdown: data,
         fileName: name,
         hostKeys: ['open', 'new', 'fit'],

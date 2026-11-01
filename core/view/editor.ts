@@ -221,8 +221,9 @@ const nonNull = <X>(x: X | null | undefined): x is X => x !== null && x !== unde
  */
 const isShadowRoot = (n: Node): n is ShadowRoot => n.nodeType === 11 /* DOCUMENT_FRAGMENT_NODE */ && 'host' in n;
 
-export function mountEditor(container: HTMLElement, options: EditorOptions = {}): EditorHandle {
+export function mountEditor(container: HTMLElement, options: EditorOptions): EditorHandle {
   const theme = THEME;
+  const make = options.createElement;
   const instance = ++instanceSeq;
   const isMac = options.isMac ?? detectMac();
   const ac = new AbortController();
@@ -235,15 +236,15 @@ export function mountEditor(container: HTMLElement, options: EditorOptions = {})
   ): void => el.addEventListener(type, fn, { ...opts, ...sig });
 
   // ---------- DOM ----------
-  const rootEl = document.createElement('div');
+  const rootEl = make('div');
   rootEl.className = 'mm-root';
-  const viewport = document.createElement('div');
+  const viewport = make('div');
   viewport.className = 'mm-viewport';
   viewport.tabIndex = 0;
   viewport.setAttribute('role', 'tree');
   viewport.setAttribute('aria-label', 'Mind map');
   viewport.setAttribute('aria-multiselectable', 'true');
-  const world = document.createElement('div');
+  const world = make('div');
   world.className = 'mm-world';
   const svg = document.createElementNS(SVGNS, 'svg');
   svg.setAttribute('class', 'mm-edges');
@@ -258,11 +259,11 @@ export function mountEditor(container: HTMLElement, options: EditorOptions = {})
   // The "+" buttons of a single selected node (render/plus.ts): world coordinates (they pan and zoom with the map),
   // painted above the nodes; not in the Tab order (keyboard users have Tab and Enter) and hidden from assistive tech
   // (the keys carry the same actions).
-  const plusLayer = document.createElement('div');
+  const plusLayer = make('div');
   plusLayer.className = 'mm-plus-layer';
   plusLayer.setAttribute('aria-hidden', 'true');
   const mkPlus = (kind: PlusKind, title: string): HTMLDivElement => {
-    const el = document.createElement('div');
+    const el = make('div');
     el.className = 'mm-plus';
     el.dataset['kind'] = kind;
     el.title = title;
@@ -277,26 +278,26 @@ export function mountEditor(container: HTMLElement, options: EditorOptions = {})
   plusLink.setAttribute('visibility', 'hidden');
   gOverlay.appendChild(plusLink);
   viewport.appendChild(world);
-  const measureHost = document.createElement('div');
+  const measureHost = make('div');
   measureHost.className = 'mm-measure';
   measureHost.setAttribute('aria-hidden', 'true');
   // The selection bar (2+ selected nodes): bottom centre of the map, over it (a sibling of the viewport, so a press on
   // it is never a press on the canvas); its buttons never take the keyboard focus from the map.
   const modName = isMac ? 'Cmd' : 'Ctrl';
-  const selBar = document.createElement('div');
+  const selBar = make('div');
   selBar.className = 'mm-selbar';
   selBar.setAttribute('role', 'toolbar');
   selBar.setAttribute('aria-label', 'Selection');
-  const selCount = document.createElement('span');
+  const selCount = make('span');
   selCount.className = 'mm-selbar-count';
   const barSep = (): HTMLSpanElement => {
-    const sep = document.createElement('span');
+    const sep = make('span');
     sep.className = 'mm-selbar-sep';
     sep.setAttribute('aria-hidden', 'true');
     return sep;
   };
   const barButton = (cls: string, text: string, title: string): HTMLButtonElement => {
-    const b = document.createElement('button');
+    const b = make('button');
     b.type = 'button';
     b.className = cls;
     b.textContent = text;
@@ -316,12 +317,12 @@ export function mountEditor(container: HTMLElement, options: EditorOptions = {})
   const domId = (id: string): string => `mm-${instance}-${id}`; // element ids never collide between two mounts
 
   // ---------- state ----------
-  const measureDom = createDomMeasurer(measureHost);
+  const measureDom = createDomMeasurer(measureHost, make);
   // an empty node reserves caret width, unless the live label (Shift+Enter in an empty node) says otherwise
   const measure: MeasureText = (text: string, st: TextStyle): TextMetrics =>
     text === '' ? (measureDom.peek(text, st) ?? { width: EMPTY_W, height: st.lineHeight, lines: null }) : measureDom(text, st);
   const engine = createLayoutEngine({ theme, measureText: measure, mode: 'right' });
-  const renderer = new MapRenderer(viewport, world, gPaths, theme, domId);
+  const renderer = new MapRenderer(viewport, world, gPaths, theme, domId, make);
   // the colours painted from script (render/theme.ts MapColors): the host's, else the dark theme's (setColors)
   let paints = resolveColors(options.colors);
   renderer.paint = paints;
@@ -1357,7 +1358,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions = {})
       gOverlay.appendChild(cover);
       covers.push(cover);
     }
-    const ghost = document.createElement('div');
+    const ghost = make('div');
     ghost.className = ids.length > 1 ? 'mm-ghost mm-ghost-multi' : 'mm-ghost';
     // a group reads "3 nodes" on the selection colour; one node shows its text on its branch colour
     ghost.textContent = ids.length > 1 ? `${ids.length} nodes` : ghostText(T.indexOf(root).get(first.id)?.node.text ?? '');
@@ -1705,7 +1706,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions = {})
     stopAnim();
     setHover(null);
     const rect = viewport.getBoundingClientRect();
-    const el = document.createElement('div');
+    const el = make('div');
     el.className = 'mm-marquee-box';
     el.hidden = true; // until it moves: a Shift+click on the canvas draws nothing
     viewport.appendChild(el);

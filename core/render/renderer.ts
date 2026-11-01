@@ -15,6 +15,7 @@ import type { Layout, LayoutNode } from '../layout/types.js';
 import { depthClass } from '../layout/types.js';
 import type { TreeIndex } from '../model/tree.js';
 import { branchColorOf, type BranchColors } from './colors.js';
+import type { ElementFactory } from './element.js';
 import { buildConnectors } from './connectors.js';
 import { BADGE_GAP, BADGE_SIZE, RING_HIT, handleKind, hiddenCount, isPill } from './handles.js';
 import { DEFAULT_COLORS, strokeFor, type MapColors, type Theme } from './theme.js';
@@ -104,6 +105,8 @@ export class MapRenderer {
     private readonly theme: Theme,
     /** Element ids never collide between two mounts. */
     readonly domId: (id: string) => string,
+    /** Makes the node, label, ring and badge elements (the host's ElementFactory). */
+    private readonly make: ElementFactory,
   ) {}
 
   render({ lay, index, sel, multi = NONE, editingId, colors }: RenderInput): void {
@@ -114,12 +117,12 @@ export class MapRenderer {
       seen.add(L.id);
       let r = this.els.get(L.id);
       if (!r) {
-        const el = document.createElement('div');
+        const el = this.make('div');
         el.className = 'mm-node';
         el.dataset['id'] = L.id;
         el.id = this.domId(L.id);
         el.setAttribute('role', 'treeitem');
-        const label = document.createElement('div');
+        const label = this.make('div');
         label.className = 'mm-label';
         el.appendChild(label);
         r = { el, label, text: null, dc: -1, depth: -1, expanded: '', x: NaN, y: NaN, selected: null, multi: null, aria: null, ring: null, badge: null, w: -1 };
@@ -268,7 +271,7 @@ export class MapRenderer {
   private ring(r: NodeView, L: LayoutNode, l1: readonly string[], colors: BranchColors): void {
     let g = r.ring;
     if (!g) {
-      const el = document.createElement('div');
+      const el = this.make('div');
       el.className = 'mm-ring';
       el.dataset['id'] = L.id;
       el.title = 'Collapse';
@@ -296,7 +299,7 @@ export class MapRenderer {
   private badge(r: NodeView, L: LayoutNode, n: MapNode, l1: readonly string[], colors: BranchColors): void {
     let b = r.badge;
     if (!b) {
-      const el = document.createElement('div');
+      const el = this.make('div');
       el.className = 'mm-badge';
       el.dataset['id'] = L.id;
       el.title = 'Expand';
