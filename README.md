@@ -27,8 +27,10 @@ GitHub) it stays a plain outline.
   or fold them together; pan, zoom and pinch.
 - **Your note stays your note.** An edit rewrites only the lines it touches: properties, text under items, links,
   tags and comments come back byte for byte, and opening a note as a map never changes it. The exceptions are list
-  tidying: a list whose items you add, remove or reorder takes one bullet style and indent (a numbered one is
-  renumbered), and in a note with mixed line endings the list gets one kind ([format rules](core/format/README.md)).
+  tidying ([format rules](core/format/README.md)): a list whose items you add, remove or reorder takes one bullet
+  style and indent (a numbered one is renumbered), an item that moves to another depth, or whose number gains a
+  digit, takes the text under it along at its new indent, and in a note with mixed line endings the list gets one
+  kind.
 - **Saved the Obsidian way.** Obsidian saves the note 2 seconds after a change, when the tab closes and when you quit;
   Cmd/Ctrl+S saves at once.
 - **Edits from elsewhere show up in place.** A change made in the Markdown view, by Obsidian Sync or on another device
@@ -202,4 +204,5 @@ MIT, see [LICENSE](LICENSE).
 ## More plugins by the author
 
 [Plain Deck](https://community.obsidian.md/plugins/plain-deck): study flashcards written in your notes, with
-spaced repetition (FSRS), and keep each card's progress in its own note, so it syncs with the vault.
+spaced repetition (FSRS); each review is saved as a hidden line under its card, in the same note, so your progress
+syncs with the vault.
