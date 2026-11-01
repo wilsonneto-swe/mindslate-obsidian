@@ -56,10 +56,10 @@ itself on its page in the [community directory](https://community.obsidian.md/pl
 | [Rich Mindmap](https://community.obsidian.md/plugins/rich-mindmap) | Headings and nested lists | Yes | Byte for byte, apart from five listed normalizations (such as CRLF to LF and a final newline) | The `mindmap-collapsed` property in the note | Yes |
 | [linkmind](https://community.obsidian.md/plugins/linkmind) | Headings and bullet lists | Yes | Every edit, as plain Markdown | — | Yes |
 | [OMM MindMap](https://community.obsidian.md/plugins/omm-mindmap) | A nested bullet list, one tree per top-level bullet | Yes | The outline as a bullet list, and its layouts in a `mindmap-layout` property; other properties are kept | — | Yes |
-| [Stratify](https://community.obsidian.md/plugins/stratify-mindmap) | Headings, lists or both (three modes), in notes with `type: mindmap` | Yes | Node edits; paragraphs, quotes, code blocks, tables and comments stay in the note | Emphasis around the node's text in the note (`# *Deferred*`) | Yes |
+| [Stratify Mindmap](https://community.obsidian.md/plugins/stratify-mindmap) | Headings, lists or both (three modes), in notes with `type: mindmap` | Yes | Node edits; paragraphs, quotes, code blocks, tables and comments stay in the note | Emphasis around the node's text in the note (`# *Deferred*`) | Yes |
 
 The others also do things Mindslate doesn't: Rich Mindmap adds priority, progress and flag marks to nodes; linkmind,
-OMM MindMap and Stratify export a map as an image; Stratify embeds a map in another note.
+OMM MindMap and Stratify Mindmap export a map as an image; Stratify Mindmap embeds a map in another note.
 
 ## Getting started
 

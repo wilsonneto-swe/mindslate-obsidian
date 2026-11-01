@@ -36,12 +36,21 @@ npm run check      # what every pull request must pass: Obsidian's lint rules, t
 
 `npm run build`, `npm run lint`, `npm run typecheck` and `npm test` run one step each.
 
-Try your build in a test vault, never in the vault with your real notes. Link the plugin's files into the test vault
-once (run this at the repository root):
+Try your build in a test vault, never in the vault with your real notes. On macOS and Linux, link the plugin's files
+into the test vault once (run this at the repository root):
 
-```
+```sh
 mkdir -p "/path/to/test vault/.obsidian/plugins/mindslate"
 for f in main.js manifest.json styles.css; do ln -sf "$PWD/$f" "/path/to/test vault/.obsidian/plugins/mindslate/$f"; done
+```
+
+On Windows, copy the files instead (in PowerShell, at the repository root), and run the `Copy-Item` line again after
+each rebuild:
+
+```powershell
+$plugin = "C:\path\to\test vault\.obsidian\plugins\mindslate"
+New-Item -ItemType Directory -Force $plugin | Out-Null
+Copy-Item main.js, manifest.json, styles.css $plugin
 ```
 
 Then enable **Mindslate** in Settings > Community plugins. After each rebuild, run **Reload app without saving** from
