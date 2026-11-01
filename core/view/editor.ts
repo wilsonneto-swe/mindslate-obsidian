@@ -22,10 +22,16 @@
  *
  * Multi-selection: `sel` is the PRIMARY node (the keyboard acts on it) and `others` the other selected nodes
  * (input/selection.ts). Shift+click and Mod+click toggle a node, Shift+drag on the empty canvas draws a marquee, Mod+A
- * selects every visible node, Esc or a click on the empty canvas goes back to the primary. Delete, Alt+Up / Alt+Down,
+ * selects every visible node, Esc goes back to the primary. Delete, Alt+Up / Alt+Down,
  * Mod+/, Mod+C / Mod+X, a drag of a selected node and the selection bar act on every top-level selected node but the
  * root (model/batch.ts), each in ONE undo step (folding is view state, as for one node). A single selected node on an
  * editable map shows two "+" buttons where Tab's child and Enter's sibling would appear (render/plus.ts).
+ *
+ * REST: a click or a tap on the empty canvas that does not move (no pan) leaves nothing shown as selected, for reading:
+ * no selection mark, no "+" buttons, no active descendant. `sel` stays the keyboard's anchor. The first key that acts
+ * on the selection (an arrow, Tab, Enter, typing, Space, F2, Delete, Mod+/, Mod+D, Alt+Up / Alt+Down, Mod+C / X / V,
+ * or a host's perform()) only shows the selection again on that node, so the user sees what the next key acts on;
+ * a click on a node selects it, and Mod+A, a marquee, Undo and Redo show what they select.
  */
 import { baseName, newFileText, parseDocument } from '../format/index.js';
 import type { MapDocument, MapNode } from '../format/types.js';
@@ -77,6 +83,20 @@ const DOUBLE_CLICK_MS = 1000; // a dblclick this soon after the click-again that
 const PLUS_DOUBLE_MS = 500; // a press this soon after a click on a "+" (and as close) is the second click of a double-click
 const MARQUEE_THRESHOLD = 4; // px a Shift+press on the canvas travels before the marquee shows
 const NO_OTHERS: readonly string[] = Object.freeze([]);
+/** REST: the key commands that act on the selection (or start from it); while resting they only show it again. */
+const ACTS_ON_SELECTION: ReadonlySet<KeyCommand['type']> = new Set<KeyCommand['type']>([
+  'arrow',
+  'select-parent',
+  'add-child',
+  'add-sibling',
+  'add-parent',
+  'start-edit',
+  'type-to-replace',
+  'delete',
+  'toggle-collapse',
+  'duplicate',
+  'reorder',
+]);
 let instanceSeq = 0;
 
 /** Mod = Cmd? Detected from the browser when the shell passes no `isMac` option. */
@@ -344,6 +364,8 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
   let notifiedZoom = NaN; // onView fires when the zoom changes, not on every pan/animation frame
   let heightFallback = false; // mounted into a container without a height: a min-height was applied once
   let sel = '';
+  /** REST: nothing is shown as selected after a click on the empty canvas; `sel` is still the keyboard's anchor. */
+  let resting = false;
   // the other selected nodes of a multi-selection, oldest first (never `sel`; only visible nodes: relayout prunes them)
   let others = new Set<string>();
   let editingId: string | null = null;
@@ -377,8 +399,12 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
   const rootId = (): string => idOf(root);
   // the multi-selection rides along in the snapshots: Undo of a batch delete or move selects those nodes again
   const snap = (): EditorSnapshot => ({ root, sel, doc, others: others.size ? [...others] : NO_OTHERS });
-  /** The selection as the pure helpers take it (input/selection.ts). */
-  const selection = (): NodeSelection => ({ primary: sel, others: [...others] });
+  /** The selection as the pure helpers take it (input/selection.ts); while resting, nothing chosen yet (the root alone). */
+  const selection = (): NodeSelection => (resting ? { primary: rootId(), others: [] } : { primary: sel, others: [...others] });
+  /** The node drawn as selected: none while resting (REST). */
+  const shownSel = (): string | null => (resting ? null : sel);
+  /** A marquee's primary as drawn: while resting, none until the marquee touches a node. */
+  const marqueeShown = (m: Marquee): string | null => (resting && m.hits.length === 0 ? null : m.next.primary);
   /** Every selected node, the primary first. */
   const selectedAll = (): string[] => [sel, ...others];
   /**
@@ -413,6 +439,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
     for (const id of T.collapsedIds(st.root)) if (!current.has(id)) ids.add(id);
     root = T.withCollapsed(st.root, ids);
     sel = visibleSelection(root, st.sel);
+    resting = false; // Undo / Redo show the selection they restore
     others = new Set((st.others ?? NO_OTHERS).filter((id) => id !== sel)); // hidden ones leave at the relayout
     doc = st.doc;
     history.replacePresent(snap());
@@ -470,7 +497,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
   const branchColor = (L: LayoutNode, l1: readonly string[] = level1Ids()): string => renderer.branchColor(L, l1, colors);
   function render(): void {
     renders++;
-    renderer.render({ lay, index: T.indexOf(root), sel: marquee?.next.primary ?? sel, editingId, colors, multi: marquee?.preview ?? others });
+    renderer.render({ lay, index: T.indexOf(root), sel: marquee !== null ? marqueeShown(marquee) : shownSel(), editingId, colors, multi: marquee?.preview ?? others });
     syncChrome();
   }
   /** The node objects from `id` up to the root of `r` (what a layout memo entry of `id` is part of). */
@@ -688,7 +715,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
       return;
     }
     if (editingId !== null) endEdit();
-    if (sel !== id) select(id, { reveal: true });
+    if (sel !== id || resting) select(id, { reveal: true }); // REST: a host's edit() shows the node it edits
     else clearOthers(); // typing, Space, F2, a click again: the primary node alone
     const r = renderer.els.get(id);
     if (!r) return;
@@ -839,6 +866,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
   function select(id: string, { reveal = true }: { reveal?: boolean } = {}): void {
     if (!lay.nodes.get(id)) return;
     sel = id;
+    resting = false;
     others.clear();
     history.push(snap()); // selection only: updates the present, never a step
     remember(id);
@@ -849,8 +877,9 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
   /** A new multi-selection (a toggle, a marquee, Mod+A): view state only, the present follows (Undo restores it with a step). */
   function setSelection(next: NodeSelection): void {
     const changed = next.primary !== sel || next.others.length !== others.size || next.others.some((id) => !others.has(id));
-    if (!changed) return;
+    if (!changed && !resting) return;
     sel = next.primary;
+    resting = false;
     others = new Set(next.others.filter((id) => id !== sel && lay.nodes.has(id)));
     history.replacePresent(snap());
     remember(sel);
@@ -861,6 +890,27 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
   function clearOthers(): void {
     if (others.size === 0) return;
     setSelection({ primary: sel, others: [] });
+  }
+  /** REST: a click or a tap on the empty canvas: nothing shown as selected; `sel` stays the keyboard's anchor. */
+  function rest(): void {
+    // an edit that started while the press was held (a key, a host's edit()) keeps its node shown: REST and an edit
+    // never overlap, so what is typed always lands in a label the user sees selected
+    if (resting || editingId !== null) return;
+    resting = true;
+    if (others.size) {
+      others.clear();
+      history.replacePresent(snap());
+    }
+    render();
+    if (!measuring) options.onState?.(getStats());
+  }
+  /** REST ends on a key that acts on the selection: the selection shows again on its node, scrolled into view. */
+  function wake(): void {
+    if (!resting) return;
+    resting = false;
+    render();
+    ensureVisible(sel);
+    if (!measuring) options.onState?.(getStats());
   }
   /**
    * Shift+click / Mod+click on a node: in or out of the selection (the node toggled on becomes the primary). The root
@@ -999,7 +1049,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
     if (id !== null && exists(id)) {
       if (kind === 'ring') collapse(id, { reveal: false });
       else expand(id, { reveal: false });
-      if (sel !== id || others.size) select(id, { reveal: false });
+      if (sel !== id || others.size || resting) select(id, { reveal: false }); // REST: the clicked node shows selected
       revealIfClipped(id);
     }
     viewport.focus({ preventScroll: true });
@@ -1111,11 +1161,15 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
   function onKeyDown(e: KeyboardEvent): void {
     const cmd = commandOf(e);
     if (cmd === null) return;
-    if (preventsDefault(cmd)) e.preventDefault();
+    if (preventsDefault(cmd) || (resting && ACTS_ON_SELECTION.has(cmd.type))) e.preventDefault(); // REST: no keystroke goes anywhere either
     run(cmd);
   }
   /** Run a key command (onKeyDown) or an action a host asked for (EditorHandle.perform): the same code path. */
   function run(cmd: KeyCommand): void {
+    if (resting && ACTS_ON_SELECTION.has(cmd.type)) {
+      wake(); // REST: this key only shows the selection again, on the node the keyboard left
+      return;
+    }
     const id = editingId; // the node being edited: commands that commit first then act on it
     switch (cmd.type) {
       case 'native':
@@ -1246,6 +1300,11 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
   };
   const onCopyCut = (e: ClipboardEvent): void => {
     if (!ownsClipboard(e) || e.clipboardData === null) return;
+    if (resting) {
+      e.preventDefault(); // REST: nothing shown as selected is copied or cut; the selection shows again
+      wake();
+      return;
+    }
     if (others.size) {
       // a multi-selection: every top-level selected subtree but the root, in document order, as ONE list
       const idx = T.indexOf(root);
@@ -1269,6 +1328,10 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
     const text = e.clipboardData.getData('text/plain');
     if (!text) return;
     e.preventDefault();
+    if (resting) {
+      wake(); // REST: a paste lands under a node the user sees
+      return;
+    }
     pasteText(text);
   };
   const clipOpts: AddEventListenerOptions = { capture: true, signal: ac.signal };
@@ -1772,15 +1835,15 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
     m.hits = hits;
     m.next = marqueeSelection(m.base, hits, rootId());
     m.preview = new Set(m.next.others);
-    renderer.markSelection(m.next.primary, m.preview);
+    renderer.markSelection(marqueeShown(m), m.preview);
     syncChrome(); // the bar counts them already
   }
   function marqueeUp(ev: PointerEvent): void {
     const m = marquee;
     if (m === null || ev.pointerId !== m.pid) return;
     endMarquee();
-    if (m.moved) setSelection(m.next);
-    renderer.markSelection(sel, others);
+    if (m.moved && !(resting && m.hits.length === 0)) setSelection(m.next); // REST: a marquee over nothing selects nothing
+    renderer.markSelection(shownSel(), others);
     syncChrome();
     scheduleRehover();
   }
@@ -1788,7 +1851,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
   function cancelMarquee(): void {
     if (marquee === null) return;
     endMarquee();
-    renderer.markSelection(sel, others);
+    renderer.markSelection(shownSel(), others);
     syncChrome();
     scheduleRehover();
   }
@@ -1831,10 +1894,11 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
   };
   // where the buttons are drawn: recomputed when the layout or the selection changes
   let plusAt: { readonly lay: Layout; readonly id: string; readonly spots: PlusSpots } | null = null;
-  /** Exactly one node selected on an editable map, nothing edited, dragged, panned or marquee-selected, zoom 50 % or more. */
+  /** Exactly one node shown selected on an editable map, nothing edited, dragged, panned or marquee-selected, zoom 50 % or more. */
   const plusAllowed = (): boolean =>
     !readOnly &&
     !destroyed &&
+    !resting &&
     editingId === null &&
     others.size === 0 &&
     marquee === null &&
@@ -2003,7 +2067,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
     const ringEl = target?.closest<HTMLElement>('.mm-ring') ?? null;
     const handleEl = ringEl ?? target?.closest<HTMLElement>('.mm-badge') ?? null;
     const handleId = handleEl?.dataset['id'];
-    const live = handleId !== undefined && !(ringEl !== null && e.pointerType === 'touch' && handleId !== sel);
+    const live = handleId !== undefined && !(ringEl !== null && e.pointerType === 'touch' && handleId !== shownSel()); // REST: no ring shows
     lastDownOnHandle = live;
     if (live && e.button === 0) {
       e.preventDefault();
@@ -2061,8 +2125,8 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
       const up = (ev: PointerEvent): void => {
         if (ev.pointerId !== pid) return;
         endPan();
-        // a click (or a tap) on the empty canvas that did not move: a multi-selection goes back to its primary node
-        if (!moved && held === 1 && ev.type === 'pointerup') clearOthers();
+        // a click (or a tap) on the empty canvas that did not move: nothing shown as selected (REST)
+        if (!moved && held === 1 && ev.type === 'pointerup') rest();
       };
       const end = (): void => {
         viewport.classList.remove('mm-panning');
@@ -2088,7 +2152,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
     const toggle = e.shiftKey || (isMac ? e.metaKey : e.ctrlKey);
     // a press on a node of a multi-selection: a drag moves the whole selection, a click selects that node alone
     const group = !toggle && others.size > 0 && (nodeId === sel || others.has(nodeId));
-    const again = !toggle && !group && nodeId === sel && editingId === null; // the node is already selected: the release edits it (unless it becomes a drag)
+    const again = !toggle && !group && nodeId === sel && editingId === null && !resting; // the node is already selected: the release edits it (unless it becomes a drag)
     if (editingId !== null) endEdit();
     else {
       // focus first: a host field's blur (the web shell applies its Markdown panel: a re-parse with new ids) happens
@@ -2111,7 +2175,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
       if (exists(nodeId)) toggleSelected(nodeId);
       return;
     }
-    if (!group && (sel !== nodeId || others.size)) select(nodeId);
+    if (!group && (sel !== nodeId || others.size || resting)) select(nodeId);
     startPress(e, nodeId, again, group && exists(nodeId) && (nodeId === sel || others.has(nodeId)));
   });
   on(viewport, 'pointermove', (e) => {
@@ -2261,7 +2325,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
     if (editingId !== null) endEdit({ reveal: false });
     const id = nodeEl?.dataset['id'];
     const onNode = id !== undefined && exists(id);
-    if (onNode && id !== sel && !others.has(id)) select(id, { reveal: false });
+    if (onNode && (resting || (id !== sel && !others.has(id)))) select(id, { reveal: false }); // REST: shown before the menu
     host(e, onNode);
   });
   const onWheel = (e: WheelEvent): void => {
@@ -2441,6 +2505,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
     doc = parseDocument(markdown, { basename: baseName(fileName) });
     root = doc.root; // the editor's nodes ARE the parsed objects (ids are assigned lazily by idOf)
     sel = rootId();
+    resting = false;
     others = new Set();
     plusClick = null;
     editingId = null;
@@ -2589,6 +2654,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
     }
     const target = valid(snapshot.selected) ? T.nodeAtPath(root, snapshot.selected) : undefined;
     sel = visibleSelection(root, idOf(target ?? root));
+    resting = false;
     history.replacePresent(snap());
     lastChild.clear();
     remember(sel);
@@ -2622,12 +2688,13 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
       canRedo: history.canRedo,
       zoom: view.s,
       selected: sel,
+      selectionShown: !resting,
       editing: editingId,
       fileName,
       rootText: root.text,
       dirty: getMarkdown() !== savedMarkdown,
       readOnly,
-      deletable: !readOnly && batchIds().length > 0,
+      deletable: !readOnly && !resting && batchIds().length > 0,
       lastUpdateMs: +perfStats.lastUpdateMs.toFixed(2),
       lastInputMs: +perfStats.lastInputMs.toFixed(2),
       inputTimings: perfStats.inputTimings.slice(),
@@ -2652,7 +2719,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
     if (!deep) throw new Error('perf: empty layout');
     if (editingId !== null) endEdit();
     stopAnim(); // a keep-in-view pan still running would land after the camera is put back
-    const saved = { root, sel, others: new Set(others), history, lastChild: new Map(lastChild), view: { ...view } };
+    const saved = { root, sel, resting, others: new Set(others), history, lastChild: new Map(lastChild), view: { ...view } };
     measuring = true;
     history = new History<EditorSnapshot>(snap()); // scratch history: the user's undo stack never sees the typing
     try {
@@ -2701,6 +2768,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
       if (editingId !== null) endEdit({ cancel: true });
       root = saved.root; // the same document, the same objects the history holds
       sel = saved.sel;
+      resting = saved.resting; // REST: a measurement leaves the map as resting as it found it
       others = saved.others;
       history = saved.history;
       lastChild.clear();

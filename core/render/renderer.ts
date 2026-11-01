@@ -74,8 +74,8 @@ interface PathView {
 export interface RenderInput {
   readonly lay: Layout;
   readonly index: TreeIndex;
-  /** The selected node (the primary of a multi-selection). */
-  readonly sel: string;
+  /** The selected node (the primary of a multi-selection); null: none shown (the editor's REST). */
+  readonly sel: string | null;
   /** The other selected nodes of a multi-selection (default: none). */
   readonly multi?: ReadonlySet<string>;
   readonly editingId: string | null;
@@ -177,10 +177,7 @@ export class MapRenderer {
         this.els.delete(id);
       }
     }
-    if (this.activeDesc !== sel) {
-      this.viewport.setAttribute('aria-activedescendant', this.domId(sel));
-      this.activeDesc = sel;
-    }
+    this.setActive(sel);
 
     // connectors: one <path> per root->child edge and per non-root parent fan
     const seenP = new Set<string>();
@@ -209,8 +206,8 @@ export class MapRenderer {
   }
 
   /** The selection classes of one node: diffed, so an unchanged node costs three comparisons. */
-  private mark(r: NodeView, id: string, sel: string, multi: ReadonlySet<string>): void {
-    const isSel = id === sel;
+  private mark(r: NodeView, id: string, sel: string | null, multi: ReadonlySet<string>): void {
+    const isSel = sel !== null && id === sel;
     if (r.selected !== isSel) {
       r.el.classList.toggle('mm-selected', isSel);
       r.selected = isSel;
@@ -231,8 +228,17 @@ export class MapRenderer {
    * The selection marks alone, without a render (a marquee's live preview on every pointermove): no layout, no
    * connector, only the classes of the nodes whose marks change.
    */
-  markSelection(sel: string, multi: ReadonlySet<string>): void {
+  markSelection(sel: string | null, multi: ReadonlySet<string>): void {
     for (const [id, r] of this.els) this.mark(r, id, sel, multi);
+    this.setActive(sel); // the active descendant follows the marks (a marquee released over nothing leaves none)
+  }
+
+  /** aria-activedescendant: the primary selected node, or none (null: nothing shown as selected). Diffed. */
+  private setActive(sel: string | null): void {
+    if (this.activeDesc === sel) return;
+    if (sel === null) this.viewport.removeAttribute('aria-activedescendant');
+    else this.viewport.setAttribute('aria-activedescendant', this.domId(sel));
+    this.activeDesc = sel;
   }
 
   /**
@@ -374,6 +380,6 @@ export class MapRenderer {
     this.els.clear();
     for (const p of this.paths.values()) p.el.remove();
     this.paths.clear();
-    this.activeDesc = null;
+    this.setActive(null); // the attribute goes with the nodes: a later render with nothing selected leaves none behind
   }
 }
