@@ -715,7 +715,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
       return;
     }
     if (editingId !== null) endEdit();
-    if (sel !== id) select(id, { reveal: true });
+    if (sel !== id || resting) select(id, { reveal: true }); // REST: a host's edit() shows the node it edits
     else clearOthers(); // typing, Space, F2, a click again: the primary node alone
     const r = renderer.els.get(id);
     if (!r) return;

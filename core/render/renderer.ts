@@ -177,11 +177,7 @@ export class MapRenderer {
         this.els.delete(id);
       }
     }
-    if (this.activeDesc !== sel) {
-      if (sel === null) this.viewport.removeAttribute('aria-activedescendant');
-      else this.viewport.setAttribute('aria-activedescendant', this.domId(sel));
-      this.activeDesc = sel;
-    }
+    this.setActive(sel);
 
     // connectors: one <path> per root->child edge and per non-root parent fan
     const seenP = new Set<string>();
@@ -234,6 +230,15 @@ export class MapRenderer {
    */
   markSelection(sel: string | null, multi: ReadonlySet<string>): void {
     for (const [id, r] of this.els) this.mark(r, id, sel, multi);
+    this.setActive(sel); // the active descendant follows the marks (a marquee released over nothing leaves none)
+  }
+
+  /** aria-activedescendant: the primary selected node, or none (null: nothing shown as selected). Diffed. */
+  private setActive(sel: string | null): void {
+    if (this.activeDesc === sel) return;
+    if (sel === null) this.viewport.removeAttribute('aria-activedescendant');
+    else this.viewport.setAttribute('aria-activedescendant', this.domId(sel));
+    this.activeDesc = sel;
   }
 
   /**
