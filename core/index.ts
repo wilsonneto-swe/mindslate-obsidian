@@ -19,7 +19,7 @@
  * The stylesheet is a separate export: `import '../core/view/editor.css'`.
  */
 
-export const VERSION = '1.0.0' as const;
+export const VERSION = '1.0.1' as const;
 
 export * from './format/index.js';
 export * from './model/index.js';

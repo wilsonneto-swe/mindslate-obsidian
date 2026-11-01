@@ -11,7 +11,7 @@ body:
     attributes:
       label: Mindslate version
       description: Settings > Community plugins shows it.
-      placeholder: "1.0.0"
+      placeholder: "1.0.1"
     validations:
       required: true
   - type: input
