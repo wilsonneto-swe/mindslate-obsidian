@@ -80,7 +80,12 @@ var RE = {
 	tableDelimPrefix: /^\|?[ \t]*:?-+:?[ \t]*\|/,
 	delimOnly: /^(?=[^|]*\|)(?=[^-]*-)[-:| \t]+$/,
 	footnoteDef: /^\[\^[^\]\s]+\]:/,
-	tableDelim: /^(?=.*\|)\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*$|^:?-+:?[ \t]*\|[ \t]*:?-+:?/,
+	/**
+	* A table delimiter row. LINEAR: the blanks between cells belong to the pipe that follows them, so a long run of
+	* blanks is read once (the same lines as `/^(?=.*\|)\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*$|.../`,
+	* which split such a run between two `[ \t]*` in every way: quadratic, fuzz.test.ts FZ5).
+	*/
+	tableDelim: /^(?=.*\|)\|?[ \t]*:?-+:?(?:[ \t]*\|[ \t]*:?-+:?)*(?:[ \t]*\|)?[ \t]*$|^:?-+:?[ \t]*\|[ \t]*:?-+:?/,
 	/** Obsidian block comments / math blocks start at line start (refinement of R10b). */
 	obsBlock: /^(?:%%|\$\$)/,
 	/** Any digit count: legacy remark (Obsidian Reading view) accepts 10+ digit markers (R10a). */

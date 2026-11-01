@@ -64,7 +64,8 @@ RE_SETEXT = re.compile(r'(?:=+|-+)[ \t]*\Z')
 RE_TABLE_DELIM_PREFIX = re.compile(r'\|?[ \t]*:?-+:?[ \t]*\|')
 RE_DELIM_ONLY = re.compile(r'(?=[^|]*\|)(?=[^-]*-)[-:| \t]+\Z')
 RE_FOOTNOTE_DEF = re.compile(r'\[\^[^\]' + _WS + r']+\]:')
-RE_TABLE_DELIM = re.compile(r'(?=' + _DOT + r'*\|)\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*\Z'
+# the blanks between cells belong to the pipe after them, so a long run is read once (LINEAR, escape.ts tableDelim)
+RE_TABLE_DELIM = re.compile(r'(?=' + _DOT + r'*\|)\|?[ \t]*:?-+:?(?:[ \t]*\|[ \t]*:?-+:?)*(?:[ \t]*\|)?[ \t]*\Z'
                             r'|:?-+:?[ \t]*\|[ \t]*:?-+:?')
 RE_OBS_BLOCK = re.compile(r'(?:%%|\$\$)')
 RE_ORDERED = re.compile(r'([0-9]+)(\\*)([.)])(' + _DOT + r'*)\Z')
