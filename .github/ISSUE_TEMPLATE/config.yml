@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or help
+    url: https://github.com/wilsonneto-swe/mindslate-obsidian/discussions/categories/q-a
+    about: Ask how to do something with Mindslate, or why it behaves the way it does.
+  - name: Idea to discuss
+    url: https://github.com/wilsonneto-swe/mindslate-obsidian/discussions/categories/ideas
+    about: Talk an idea through before it becomes a feature request.
+  - name: Show and tell
+    url: https://github.com/wilsonneto-swe/mindslate-obsidian/discussions/categories/show-and-tell
+    about: Share a map, a workflow or a setup.

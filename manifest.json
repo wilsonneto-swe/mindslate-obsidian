@@ -2,7 +2,7 @@
   "id": "mindslate",
   "name": "Mindslate",
   "version": "0.1.2",
-  "minAppVersion": "1.13.7",
+  "minAppVersion": "1.7.4",
   "description": "Open a note as a keyboard-first mind map and edit it in place. The note stays an ordinary heading with a nested list.",
   "author": "Wilson Neto",
   "authorUrl": "https://github.com/wilsonneto-swe",

@@ -1,0 +1,37 @@
+name: Feature request
+description: Something Mindslate could do, with the problem it solves.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        To talk an idea through before it is concrete, open it in [Discussions](https://github.com/wilsonneto-swe/mindslate-obsidian/discussions/categories/ideas) instead.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you are trying to do, and what gets in the way today.
+      placeholder: When I plan a project as a map, ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would help
+      description: How you would like Mindslate to handle it, and what the note would look like as Markdown. A sketch is welcome.
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you use today
+      description: A workaround, another plugin or another app that does this, and what you like or miss in it.
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send it
+      options:
+        - label: I searched the existing issues and discussions for this idea.
+          required: true
