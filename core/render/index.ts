@@ -1,4 +1,5 @@
 /** render: connector geometry, sticky branch colours, the theme, the DOM measurer, the collapse handles, the "+" buttons and the DOM/SVG renderer. */
+export type { ElementFactory } from './element.js';
 export { DEFAULT_COLORS, FONT_FAMILY, PALETTE, THEME, resolveColors, strokeFor } from './theme.js';
 export type { MapColors, Theme, ThemeColors } from './theme.js';
 export { bezier, buildConnectors, fanSegment, previewPath } from './connectors.js';

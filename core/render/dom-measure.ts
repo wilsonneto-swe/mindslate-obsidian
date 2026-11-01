@@ -14,6 +14,7 @@
  * (renderer.ts pinWidth), so the box, its rings and its handles still line up with the layout.
  */
 import type { MeasureText, TextMetrics, TextStyle } from '../layout/types.js';
+import type { ElementFactory } from './element.js';
 
 export interface MeasurePair {
   readonly text: string;
@@ -39,7 +40,8 @@ export interface DomMeasurer extends MeasureText {
   stats(): { entries: number; batches: number; measured: number };
 }
 
-export function createDomMeasurer(host: HTMLElement): DomMeasurer {
+/** `make` creates the measured elements (the host's ElementFactory). */
+export function createDomMeasurer(host: HTMLElement, make: ElementFactory): DomMeasurer {
   const cache = new Map<string, TextMetrics>();
   const transient = new Map<string, TextMetrics>(); // results from a non-rendered host: usable for this layout, never trusted again
   const live = new Set<string>(); // cache keys written by setLive() during the current edit session
@@ -64,15 +66,14 @@ export function createDomMeasurer(host: HTMLElement): DomMeasurer {
     }
     if (!todo.length) return 0;
     const ok = rendered();
-    const frag = document.createDocumentFragment();
     const els = todo.map(([, p]) => {
-      const el = document.createElement('div');
+      const el = make('div');
       el.className = 'mm-m mm-' + p.st.key;
       el.textContent = p.text;
-      frag.appendChild(el);
       return el;
     });
-    host.appendChild(frag);
+    // appended one by one: nothing reads layout until all are in, so the batch still costs one reflow
+    for (const el of els) host.appendChild(el);
     for (let i = 0; i < todo.length; i++) {
       const entry = todo[i];
       const el = els[i];
