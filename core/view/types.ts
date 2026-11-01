@@ -120,6 +120,11 @@ export interface EditorStats {
   readonly canRedo: boolean;
   readonly zoom: number;
   readonly selected: string;
+  /**
+   * The selection is drawn. False after a click or a tap on the empty canvas (REST) until a key that acts on the
+   * selection, a click on a node, Mod+A, a marquee, Undo or Redo shows it again; `selected` stays the keyboard's anchor.
+   */
+  readonly selectionShown: boolean;
   readonly editing: string | null;
   readonly fileName: string;
   /** The root's text: the file's H1, or its base name when it has none (getFileInfo().hasH1). */
@@ -127,7 +132,7 @@ export interface EditorStats {
   /** getMarkdown() !== the text as loaded or last markSaved(). */
   readonly dirty: boolean;
   readonly readOnly: boolean;
-  /** Delete would remove something: a node other than the root is selected and the map is editable. */
+  /** Delete would remove something: a node other than the root is selected (and shown) and the map is editable. */
   readonly deletable: boolean;
   readonly lastUpdateMs: number;
   readonly lastInputMs: number;
