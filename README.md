@@ -157,8 +157,9 @@ part of the plugin: Obsidian never loads it, and the plugin's releases do not in
 - **On your phone**: install it from Community plugins there too, or let Obsidian Sync bring it (turn on
   "Installed community plugins" and "Active community plugin list" in Settings > Sync on both devices).
 
-Mindslate needs Obsidian 1.13.7 or later and runs on desktop (macOS, Windows, Linux) and mobile (iOS, iPadOS,
-Android). It has been tested with Obsidian 1.13.7 and 1.14.5 on macOS, and in Obsidian's mobile emulation.
+Mindslate needs Obsidian 1.7.4 or later and runs on desktop (macOS, Windows, Linux) and mobile (iOS, iPadOS,
+Android). It has been tested with Obsidian 1.13.7 and 1.14.5 on macOS and in Obsidian's mobile emulation, and with
+1.7.4 on macOS.
 
 ## Privacy
 
