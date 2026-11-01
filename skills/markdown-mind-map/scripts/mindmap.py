@@ -919,7 +919,8 @@ def validate_light(text: str, basename: str):
             del stack[tabs + 1:]
             current = Node('', line=k + 1)
             current_tabs = tabs
-            written[id(current)] = [content] if content.strip(' \t') != '' else []
+            # the label's lines without the spaces and TABs at their ends, as the app reads them (parse.ts trimEndBlank)
+            written[id(current)] = [text] if text != '' else []
             stack[-1].children.append(current)
             stack.append(current)
         elif (c and current is not None and len(c.group(1)) == current_tabs and not blank
@@ -946,7 +947,7 @@ def validate_light(text: str, basename: str):
                 break
             if not written[id(current)]:
                 errors.append((k + 1, 'line %d: write the label on the marker line, not below it' % (k + 1)))
-            written[id(current)].append(c.group(2))
+            written[id(current)].append(c.group(2).rstrip(' \t'))
         else:
             break
         k += 1
