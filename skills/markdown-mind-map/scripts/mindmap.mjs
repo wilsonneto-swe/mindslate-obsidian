@@ -2218,6 +2218,8 @@ function toJsonNode(node) {
 }
 /** Two-space JSON with one final newline. */
 function mapToJson(root) {
+	const { depth } = treeStats(root);
+	if (depth > 200) throw new InputError(`the map is ${depth} levels deep: to-json prints the JSON that from-json reads, at most 200 levels`);
 	const top = {
 		text: root.text,
 		children: root.children.map(toJsonNode)
