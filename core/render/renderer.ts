@@ -380,6 +380,6 @@ export class MapRenderer {
     this.els.clear();
     for (const p of this.paths.values()) p.el.remove();
     this.paths.clear();
-    this.activeDesc = null;
+    this.setActive(null); // the attribute goes with the nodes: a later render with nothing selected leaves none behind
   }
 }

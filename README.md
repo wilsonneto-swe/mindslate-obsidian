@@ -25,7 +25,7 @@ GitHub) it stays a plain outline.
 - **Mouse and touch too.** Click to select and click again to edit; drag a branch onto another node; the "+" buttons
   add a child or a sibling; a ring folds a branch and its count badge unfolds it; select several nodes to delete, move
   or fold them together; pan, zoom and pinch. A click or a tap on the empty map clears the selection while you read;
-  the next key you press brings it back on the node you left.
+  the next key that acts on the selection, such as an arrow, brings it back on the node you left.
 - **Your note stays your note.** An edit rewrites only the lines it touches: properties, text under items, links,
   tags and comments come back byte for byte, and opening a note as a map never changes it. The exceptions are list
   tidying ([format rules](core/format/README.md)): a list whose items you add, remove or reorder takes one bullet

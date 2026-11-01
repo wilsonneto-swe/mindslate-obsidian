@@ -2717,7 +2717,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
     if (!deep) throw new Error('perf: empty layout');
     if (editingId !== null) endEdit();
     stopAnim(); // a keep-in-view pan still running would land after the camera is put back
-    const saved = { root, sel, others: new Set(others), history, lastChild: new Map(lastChild), view: { ...view } };
+    const saved = { root, sel, resting, others: new Set(others), history, lastChild: new Map(lastChild), view: { ...view } };
     measuring = true;
     history = new History<EditorSnapshot>(snap()); // scratch history: the user's undo stack never sees the typing
     try {
@@ -2766,6 +2766,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
       if (editingId !== null) endEdit({ cancel: true });
       root = saved.root; // the same document, the same objects the history holds
       sel = saved.sel;
+      resting = saved.resting; // REST: a measurement leaves the map as resting as it found it
       others = saved.others;
       history = saved.history;
       lastChild.clear();
