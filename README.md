@@ -147,8 +147,9 @@ part of the plugin: Obsidian never loads it, and the plugin's releases do not in
 
 ## Installation
 
-- **From Community plugins** (once Mindslate is listed in the directory): Settings > Community plugins > Browse,
-  search for "Mindslate", then select **Install** and **Enable**.
+- **From Community plugins**: Settings > Community plugins > Browse, search for "Mindslate", then select
+  **Install** and **Enable**. Or select **Add to Obsidian** on
+  [its page in the community directory](https://community.obsidian.md/plugins/mindslate).
 - **Manually**: download `main.js`, `manifest.json` and `styles.css` from the
   [latest release](https://github.com/wilsonneto-swe/mindslate-obsidian/releases/latest) into
   `<vault>/.obsidian/plugins/mindslate/`, reload Obsidian, then enable **Mindslate** in Settings > Community
