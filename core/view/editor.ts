@@ -893,7 +893,9 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
   }
   /** REST: a click or a tap on the empty canvas: nothing shown as selected; `sel` stays the keyboard's anchor. */
   function rest(): void {
-    if (resting) return;
+    // an edit that started while the press was held (a key, a host's edit()) keeps its node shown: REST and an edit
+    // never overlap, so what is typed always lands in a label the user sees selected
+    if (resting || editingId !== null) return;
     resting = true;
     if (others.size) {
       others.clear();
