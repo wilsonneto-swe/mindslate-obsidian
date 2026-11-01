@@ -54,7 +54,7 @@ itself on its page in the [community directory](https://community.obsidian.md/pl
 
 | | Map is built from | Edit on the map | What a save writes | Folds are kept in | Desktop and mobile |
 | --- | --- | --- | --- | --- | --- |
-| **Mindslate** | The note's `# heading` and the nested list under it | Yes | The lines an edit touches, plus [list tidying](core/format/README.md) in a list you add to or reorder; opening a note never writes it | The plugin's data (`data.json`), or the note when it already uses `<!-- markmap: fold -->` | Yes |
+| **Mindslate** | The note's `# heading` and the nested list under it | Yes | The lines an edit touches, plus [list tidying](core/format/README.md) in a list whose items are added, removed or reordered; opening a note never writes it | The plugin's data (`data.json`), or the note when it already uses `<!-- markmap: fold -->` | Yes |
 | [Rich Mindmap](https://community.obsidian.md/plugins/rich-mindmap) | Headings and nested lists | Yes | Byte for byte, apart from five listed normalizations (such as CRLF to LF and a final newline) | The `mindmap-collapsed` property in the note | Yes |
 | [linkmind](https://community.obsidian.md/plugins/linkmind) | Headings and bullet lists | Yes | Every edit, as plain Markdown | — | Yes |
 | [OMM MindMap](https://community.obsidian.md/plugins/omm-mindmap) | A nested bullet list, one tree per top-level bullet | Yes | The outline as a bullet list, and its layouts in a `mindmap-layout` property; other properties are kept | — | Yes |
