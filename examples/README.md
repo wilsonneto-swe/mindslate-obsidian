@@ -1,8 +1,8 @@
 # Example maps
 
 Notes that Mindslate opens as mind maps. Copy this folder (or one note) into your vault: each note has the property
-`mindslate: map`, so a click opens it as a map. Here on GitHub, and in Obsidian without the plugin, they are plain
-outlines.
+`mindslate: map`, so with the plugin turned on a click opens it as a map. Here on GitHub, and in Obsidian without the
+plugin, they are plain outlines.
 
 | Note | What it is | What it shows |
 | --- | --- | --- |

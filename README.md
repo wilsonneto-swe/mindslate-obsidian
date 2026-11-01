@@ -111,7 +111,8 @@ apps, or any agent that reads instructions) to make mind maps in your vault: how
 escaping rules, and how to add to a map without breaking it. Its command-line tool is built from Mindslate's own
 Markdown reader and writer, so a map it writes is byte for byte what the plugin writes, and its validator prints the
 tree the map will show. In a vault where Mindslate is installed, the agent gives each new map the `mindslate: map`
-property, so the note opens as a map when you click it.
+property, so with the plugin turned on the note opens as a map when you click it (if the plugin is off, the agent
+tells you to turn it on).
 
 Install it in Claude Code by copying the folder into your skills folder, then start a new session:
 

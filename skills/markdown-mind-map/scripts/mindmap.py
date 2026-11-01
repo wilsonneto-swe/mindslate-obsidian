@@ -13,6 +13,9 @@ validate is lighter than the Node one: it checks the canonical form (an optional
 one blank line, a TAB-indented '- ' list) and reports anything else as an error, with the line. It reads on past
 plain text before the H1, between the H1 and the list and after the list, and says where it stops reading a list
 it does not follow (notes, spaces or '*' markers), so the outline it prints is never silently partial.
+LINEAR: as in the app's format code, every test of a line runs in time linear in its length: the link reference
+definition test, the fold suffix, the root's line breaks and an H1's closing hashes are hand-written scans, not
+expressions that backtrack over a long line.
 Exit codes: 0 ok (warnings allowed), 1 errors, 2 usage. No dependencies.
 """
 from __future__ import annotations
@@ -20,6 +23,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+from array import array
 
 VERSION = '0.1.0'
 MAX_DEPTH = 200
@@ -27,6 +31,7 @@ LIMIT_LABEL = 80
 LIMIT_DEPTH = 6
 LIMIT_CHILDREN = 12
 FOLD = '<!-- markmap: fold -->'
+OUTLINE_LINES = 400
 
 # JavaScript's \s (WhiteSpace + LineTerminator), its '.' (anything but a line terminator) and trim().
 _WS = '\\t\\n\\x0b\\x0c\\r \\xa0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff'
@@ -55,7 +60,6 @@ RE_HTML1TO6 = re.compile(r'(?:<(?:script|pre|style|textarea)(?:[ \t>]|\Z)|<!--|<
                          + _HTML6 + r')(?:[ \t>]|/>|\Z))', re.I | re.A)
 RE_HTML7 = re.compile(r'''(?:<[A-Za-z][A-Za-z0-9-]*(?:[ \t]+[A-Za-z_:][A-Za-z0-9_.:-]*(?:[ \t]*=[ \t]*'''
                       r'''(?:[^ \t"'=<>`]+|'[^']*'|"[^"]*"))?)*[ \t]*/?>|</[A-Za-z][A-Za-z0-9-]*[ \t]*>)[ \t]*\Z''')
-RE_LINK_DEF = re.compile(r'\[(?:[^\]\\]|\\' + _DOT + r')*[^' + _WS + r'](?:[^\]\\]|\\' + _DOT + r')*\]:')
 RE_SETEXT = re.compile(r'(?:=+|-+)[ \t]*\Z')
 RE_TABLE_DELIM_PREFIX = re.compile(r'\|?[ \t]*:?-+:?[ \t]*\|')
 RE_DELIM_ONLY = re.compile(r'(?=[^|]*\|)(?=[^-]*-)[-:| \t]+\Z')
@@ -64,11 +68,95 @@ RE_TABLE_DELIM = re.compile(r'(?=' + _DOT + r'*\|)\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t
                             r'|:?-+:?[ \t]*\|[ \t]*:?-+:?')
 RE_OBS_BLOCK = re.compile(r'(?:%%|\$\$)')
 RE_ORDERED = re.compile(r'([0-9]+)(\\*)([.)])(' + _DOT + r'*)\Z')
-RE_FOLD = re.compile(r'(\\*)<!--[ \t]*markmap:[ \t]*fold(?:All)?[ \t]*-->[ \t]*\Z')
+RE_FOLD_TAIL = re.compile(r'<!--[ \t]*markmap:[ \t]*fold(?:All)?[ \t]*-->[ \t]*\Z')
 RE_ROOT_HASHES = re.compile(r'(^|[ \t])(\\*)(#+)\Z')
 RE_ROOT_HASHES_ESCAPED = re.compile(r'(^|[ \t])\\(\\*)(#+)\Z')
-RE_ROOT_NEWLINES = re.compile('[' + _WS + ']*\n[' + _WS + ']*')
+RE_WS_RUN = re.compile('[' + _WS + ']+')
 RE_SURROGATE = re.compile('[\ud800-\udfff]')
+
+
+# JavaScript's \s and its line terminators, on UTF-16 code units (escape.ts isSpace, isLineTerminator)
+_SPACE_UNITS = frozenset([0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x20, 0xa0, 0x1680, 0x2028, 0x2029, 0x202f, 0x205f, 0x3000,
+                          0xfeff] + list(range(0x2000, 0x200b)))
+_LINE_TERMINATOR_UNITS = frozenset([0x0a, 0x0d, 0x2028, 0x2029])
+
+
+def _utf16_units(s: str):
+    a = array('H')
+    a.frombytes(s.encode('utf-16-le', 'surrogatepass'))
+    if sys.byteorder == 'big':
+        a.byteswap()
+    return a
+
+
+def link_def_start(s: str) -> bool:
+    """R10c: does s start like a link reference definition, "[label]:"? Exactly the lines that JavaScript's
+    /^\\[(?:[^\\]\\\\]|\\\\.)*\\S(?:[^\\]\\\\]|\\\\.)*\\]:/ matches (escape.ts linkDefStart, on UTF-16 code units as
+    JavaScript reads them), in one pass: the states are the ways it could match so far (LINEAR)."""
+    if not s.startswith('['):
+        return False
+    a, a_esc, b, b_esc = 1, 2, 4, 8
+    u = _utf16_units(s)
+    st = a
+    for i in range(1, len(u)):
+        c = u[i]
+        if st & b and c == 0x5d and i + 1 < len(u) and u[i + 1] == 0x3a:
+            return True
+        plain = c != 0x5d and c != 0x5c
+        nxt = 0
+        if st & a:
+            if plain:
+                nxt |= a
+            elif c == 0x5c:
+                nxt |= a_esc
+            if c not in _SPACE_UNITS:
+                nxt |= b
+        if st & a_esc and c not in _LINE_TERMINATOR_UNITS:
+            nxt |= a
+        if st & b:
+            if plain:
+                nxt |= b
+            elif c == 0x5c:
+                nxt |= b_esc
+        if st & b_esc and c not in _LINE_TERMINATOR_UNITS:
+            nxt |= b
+        if nxt == 0:
+            return False
+        st = nxt
+    return False
+
+
+def fold_suffix(line: str):
+    """The fold suffix of a line: (where it starts, its backslashes included; how many backslashes), or None. What
+    /(\\\\*)<!--[ \\t]*markmap:[ \\t]*fold(?:All)?[ \\t]*-->[ \\t]*$/ finds, without its scan from every backslash of a
+    long run (LINEAR): the comment runs to the end and holds no "<" after its first, so it starts at the last "<!--"."""
+    lt = line.rfind('<!--')
+    if lt < 0 or not RE_FOLD_TAIL.match(line, lt):
+        return None
+    at = lt
+    while at > 0 and line[at - 1] == '\\':
+        at -= 1
+    return at, lt - at
+
+
+def trim_closing_hashes(s: str) -> str:
+    """An ATX heading's text without its closing sequence: what /(?:^|[ \\t]+)#+[ \\t]*$/ removes (LINEAR)."""
+    t = len(s)
+    while t > 0 and s[t - 1] in ' \t':
+        t -= 1
+    h = t
+    while h > 0 and s[h - 1] == '#':
+        h -= 1
+    if h == t:
+        return s
+    if h == 0:
+        return ''
+    if s[h - 1] not in ' \t':
+        return s
+    b = h
+    while b > 0 and s[b - 1] in ' \t':
+        b -= 1
+    return s[:b]
 
 
 def _leading_backslashes(s: str) -> int:
@@ -85,7 +173,7 @@ def _needs_prepend(s: str, first: bool, bullet_char) -> bool:
         return True
     if first:
         return bool((bullet_char == '-' and RE_DASH_RUN.match(s)) or (bullet_char == '*' and RE_STAR_RUN.match(s))
-                    or RE_HTML7.match(s) or RE_LINK_DEF.match(s))
+                    or RE_HTML7.match(s) or link_def_start(s))
     return bool(RE_SETEXT.match(s) or RE_TABLE_DELIM.match(s) or RE_FOOTNOTE_DEF.match(s))
 
 
@@ -110,12 +198,13 @@ def unescape_line(line: str, first: bool, bullet_char='-') -> str:
 
 
 def escape_fold_suffix(line: str) -> str:
-    m = RE_FOLD.search(line)
-    return line[:m.start()] + '\\' + line[m.start():] if m else line
+    f = fold_suffix(line)
+    return line[:f[0]] + '\\' + line[f[0]:] if f else line
 
 
 def escape_root(text: str) -> str:
-    s = js_trim(RE_ROOT_NEWLINES.sub(' ', text))
+    # each run of white space that holds a line break becomes one space (/\\s*\\n\\s*/g in one pass: LINEAR)
+    s = js_trim(RE_WS_RUN.sub(lambda m: ' ' if '\n' in m.group(0) else m.group(0), text))
     m = RE_ROOT_HASHES.search(s)
     return s[:m.start() + len(m.group(1))] + '\\' + m.group(2) + m.group(3) if m else s
 
@@ -283,7 +372,7 @@ def front_matter_block(values) -> str:
     """--front-matter (see src/front-matter.ts in mindmap.mjs): Obsidian properties above the H1. Each value is one
     or more YAML lines, written as given between the '---' lines the CLI adds; a '---' given first or last is dropped,
     one in between is refused, and so is a TAB at the start of a line (YAML indents with spaces)."""
-    lines = [re.sub(r'[ \t]+\Z', '', l) for v in values for l in re.sub(r'\r\n?', '\n', v).split('\n')]
+    lines = [l.rstrip(' \t') for v in values for l in re.sub(r'\r\n?', '\n', v).split('\n')]
 
     def trim():
         while lines and lines[0] == '':
@@ -341,7 +430,6 @@ def strip_bom(text: str) -> str:
 
 _MARK = re.compile('([-+*•]|([0-9]{1,9})([.)]))(?=[ \\t]|\\Z)')
 _HEADING = re.compile(r'#{1,6}(?:[ \t]+|\Z)')
-_CLOSING_HASHES = re.compile(r'(?:^|[ \t]+)#+[ \t]*\Z')
 
 
 def tree_from_outline(source: str, root_option=None):
@@ -397,7 +485,7 @@ def tree_from_outline(source: str, root_option=None):
         root_text = first['text']
         h = _HEADING.match(root_text)
         if h:
-            root_text = _CLOSING_HASHES.sub('', root_text[h.end():], count=1).rstrip(' \t')
+            root_text = trim_closing_hashes(root_text[h.end():]).rstrip(' \t')
         branches = first['kids'] + top['kids'][1:]
         extra = len(top['kids']) - 1
         if extra:
@@ -532,15 +620,15 @@ def _read_label(n: Node, written: list, errors: list, unchecked=frozenset()) -> 
         first += 1
     if written:
         last = written[-1]
-        m = RE_FOLD.search(last)
-        if m and m.group(1) == '':
+        f = fold_suffix(last)
+        if f and f[1] == 0:
             n.collapsed = True
-            last = last[:m.start()].rstrip(' \t')
-            m2 = RE_FOLD.search(last)
-            if m2 and m2.group(1) != '':
-                last = last[:m2.start()] + last[m2.start() + 1:]
-        elif m:
-            last = last[:m.start()] + last[m.start() + 1:]
+            last = last[:f[0]].rstrip(' \t')
+            f2 = fold_suffix(last)
+            if f2 and f2[1] != 0:
+                last = last[:f2[0]] + last[f2[0] + 1:]
+        elif f:
+            last = last[:f[0]] + last[f[0] + 1:]
         written = written[:-1] + [last]
     label = []
     for j, l in enumerate(written):
@@ -564,6 +652,31 @@ _HIDES_H1 = re.compile(r'[ \t]|`{3}|~{3}|%%|\$\$|<|=+[ \t]*\Z')
 # Between the H1 and the list only plain paragraph lines are skipped: an indented line, a block, a quote or another
 # list marker could start what this light reader does not follow.
 _NOT_PLAIN = re.compile(r'[ \t]|`{3}|~{3}|%%|\$\$|<|>|[-+*](?:[ \t]|\Z)|[0-9]{1,9}[.)](?:[ \t]|\Z)|=+[ \t]*\Z')
+
+
+def _interrupts(s: str) -> bool:
+    """A line that starts a block of its own, so it can never be more of a label (parse.ts interrupts)."""
+    return bool(RE_ATX.match(s) or RE_FENCE.match(s) or RE_QUOTE.match(s) or RE_THEMATIC.match(s)
+                or RE_HTML1TO6.match(s))
+
+
+def _first_line_block(s: str) -> bool:
+    """Marker-line text that starts a block: the item has no label, only a note (parse.ts firstLineBlock)."""
+    return _interrupts(s) or bool(RE_HTML7.match(s)) or link_def_start(s)
+
+
+def _block_name(s: str) -> str:
+    if RE_ATX.match(s):
+        return 'a heading'
+    if s.startswith('>'):
+        return 'a quote'
+    if RE_FENCE.match(s):
+        return 'a code block'
+    if RE_THEMATIC.match(s):
+        return 'a horizontal rule'
+    if s.startswith('<'):
+        return 'an HTML block'
+    return 'a link reference definition'
 
 
 def _plural(n: int, word: str) -> str:
@@ -673,7 +786,7 @@ def validate_light(text: str, basename: str):
             errors.append((fm_end + 1, 'line %d: %s before the H1: the canonical form %s'
                            % (fm_end + 1, 'a blank line' if h - fm_end == 1 else 'blank lines', where)))
         i = h
-        t = _CLOSING_HASHES.sub('', lines[i][1:].lstrip(' \t'), count=1).rstrip(' \t')
+        t = trim_closing_hashes(lines[i][1:].lstrip(' \t')).rstrip(' \t')
         root = Node(unescape_root(t), line=i + 1)
         h1 = True
         i += 1
@@ -772,15 +885,35 @@ def validate_light(text: str, basename: str):
                                % ('s' if len(blank) > 1 else '', ', '.join(str(b) for b in blank[:6]),
                                   'them' if len(blank) > 1 else 'it')))
                 blank = []
+            content = m.group(2) if m.group(2) is not None else ''
+            text = content.rstrip(' \t')
+            if text and not _PLACEHOLDER.match(text) and not _FOLD_ONLY.match(text) and _first_line_block(text):
+                # Markdown and the app read the item as an empty node with a note (the map may go on below it)
+                errors.append((k + 1, 'line %d: %s right after the marker starts %s, so Markdown and the app read the item '
+                                      'as an empty node with a note, not as its label (to make it the label it needs a '
+                                      'backslash: write %s); this light validate does not read past this line, so the '
+                                      'outline above stops here'
+                               % (k + 1, _q(_short(text)), _block_name(text), _q(_short(escape_line(text, True, '-'))))))
+                stop = k + 1
+                break
             del stack[tabs + 1:]
             current = Node('', line=k + 1)
             current_tabs = tabs
-            content = m.group(2) if m.group(2) is not None else ''
             written[id(current)] = [content] if content.strip(' \t') != '' else []
             stack[-1].children.append(current)
             stack.append(current)
         elif (c and current is not None and len(c.group(1)) == current_tabs and not blank
               and not _LIST_MARKER.match(c.group(2))):
+            if _interrupts(c.group(2)):
+                # below a label, a line that starts a block ends it: that line and the ones after it are a note
+                errors.append((k + 1, 'line %d: %s starts %s, so Markdown and the app read it as a note under %s, not as '
+                                      'more of its label (to make it part of the label it needs a backslash: write %s); '
+                                      'this light validate does not read past this line, so the outline above stops here'
+                               % (k + 1, _q(_short(c.group(2))), _block_name(c.group(2)),
+                                  _q(_short(written[id(current)][0] if written[id(current)] else '(empty)')),
+                                  _q(_short(escape_line(c.group(2), False, '-'))))))
+                stop = k + 1
+                break
             if not written[id(current)]:
                 errors.append((k + 1, 'line %d: write the label on the marker line, not below it' % (k + 1)))
             written[id(current)].append(c.group(2))
@@ -1079,7 +1212,11 @@ def main(argv) -> int:
     # stopped before the list: no tree was read (and before the H1, not even the root)
     unread = stop is not None and not root.children
     shown_root = (root.text or '(empty)') if root.line or not unread else '(not read)'
-    out = [shown_root] if unread else _outline(root)[:400]
+    full = [shown_root] if unread else _outline(root)
+    out = full[:OUTLINE_LINES]
+    if len(full) > OUTLINE_LINES:
+        # as mindmap.mjs: never a silent cut (the nodes line below counts them all)
+        out.append('... %d more nodes (not shown; the nodes line below counts them all)' % (len(full) - OUTLINE_LINES))
     out.append('')
     out.append('file:        %s' % ('(stdin)' if path == '-' else path))
     out.append('root:        %s' % shown_root)

@@ -5,8 +5,9 @@ maps as Markdown notes that Mindslate opens: a `# heading` for the root and a ne
 an agent can turn a request, meeting notes, an outline, a document or JSON into a map in your vault, check a map, or
 add to one without breaking it.
 
-In a vault where Mindslate is installed, the agent gives each new map the property `mindslate: map`, so the note
-opens as a map as soon as you click it. If the plugin is installed but off, the agent tells you to turn it on.
+In a vault where Mindslate is installed, the agent gives each new map the property `mindslate: map`, so with the
+plugin turned on the note opens as a map as soon as you click it. If the plugin is installed but off, the agent tells
+you to turn it on.
 
 ```
 markdown-mind-map/
@@ -43,9 +44,11 @@ Zip the folder (here into your home folder):
 cd mindslate-obsidian/skills && zip -r ~/markdown-mind-map.zip markdown-mind-map -x '*.DS_Store'
 ```
 
-Upload the zip as a custom skill in Claude's settings, where skills are managed. The scripts need Claude's code
-execution; without it Claude still follows `SKILL.md` and writes the note by hand. A map made there is a file to
-download and put in your vault.
+Skills in the Claude apps need code execution: turn on **Code execution and file creation** in **Settings >
+Capabilities** (on a Team or Enterprise plan, an owner allows it for the organization). Then upload the zip under
+**Customize > Skills** ([Use Skills in Claude](https://support.claude.com/en/articles/12512180-use-skills-in-claude)). A map made there is a file to download and put in your
+vault. Without code execution there are no skills: paste `SKILL.md` into the conversation instead, and Claude writes
+the note by hand, following it.
 
 ## Any other agent
 
