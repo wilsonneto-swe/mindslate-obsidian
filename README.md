@@ -44,6 +44,23 @@ GitHub) it stays a plain outline.
   <img src=".github/assets/mobile-1-map-dark.png" width="225" alt="The same map on a phone, in the dark theme, with Undo, Redo, Delete and Fit buttons in the header">
 </p>
 
+## How it compares
+
+Several Obsidian plugins open a Markdown note as a mind map you can edit. The table sets out what each one says about
+itself on its page in the [community directory](https://community.obsidian.md/plugins) (read on November 1, 2026);
+"—" means the page doesn't say.
+
+| | Map is built from | Edit on the map | What a save writes | Folds are kept in | Desktop and mobile |
+| --- | --- | --- | --- | --- | --- |
+| **Mindslate** | The note's `# heading` and the nested list under it | Yes | Only the lines an edit touches; opening a note never writes it | The plugin's data (`data.json`), or the note when it already uses `<!-- markmap: fold -->` | Yes |
+| [Rich Mindmap](https://community.obsidian.md/plugins/rich-mindmap) | Headings and nested lists | Yes | Byte for byte, apart from five listed normalizations (such as CRLF to LF and a final newline) | The `mindmap-collapsed` property in the note | Yes |
+| [linkmind](https://community.obsidian.md/plugins/linkmind) | Headings and bullet lists | Yes | Every edit, as plain Markdown | — | Yes |
+| [OMM MindMap](https://community.obsidian.md/plugins/omm-mindmap) | A nested bullet list, one tree per top-level bullet | Yes | The outline as a bullet list, and its layouts in a `mindmap-layout` property; other properties are kept | — | Yes |
+| [Stratify](https://community.obsidian.md/plugins/stratify-mindmap) | Headings, lists or both (three modes), in notes with `type: mindmap` | Yes | Node edits; paragraphs, quotes, code blocks, tables and comments stay in the note | Emphasis around the node's text in the note (`# *Deferred*`) | Yes |
+
+The others also do things Mindslate doesn't: Rich Mindmap adds priority, progress and flag marks to nodes; linkmind,
+OMM MindMap and Stratify export a map as an image; Stratify embeds a map in another note.
+
 ## Getting started
 
 ### Open a note as a mind map
