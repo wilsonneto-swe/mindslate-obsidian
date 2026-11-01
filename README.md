@@ -1,7 +1,7 @@
 # Mindslate
 
 **Edits touch only the lines you changed, so properties, links, comments and formatting in the note stay
-byte-for-byte intact.**
+byte-for-byte intact**, apart from the list tidying the [format rules](core/format/README.md) describe.
 
 Open a note as a keyboard-first mind map and edit it in place. The note stays an ordinary heading with a nested list.
 
@@ -26,7 +26,9 @@ GitHub) it stays a plain outline.
   add a child or a sibling; a ring folds a branch and its count badge unfolds it; select several nodes to delete, move
   or fold them together; pan, zoom and pinch.
 - **Your note stays your note.** An edit rewrites only the lines it touches: properties, text under items, links,
-  tags and comments come back byte for byte, and opening a note as a map never changes it.
+  tags and comments come back byte for byte, and opening a note as a map never changes it. The exceptions are list
+  tidying: a list whose items you add, remove or reorder takes one bullet style and indent (a numbered one is
+  renumbered), and in a note with mixed line endings the list gets one kind ([format rules](core/format/README.md)).
 - **Saved the Obsidian way.** Obsidian saves the note 2 seconds after a change, when the tab closes and when you quit;
   Cmd/Ctrl+S saves at once.
 - **Edits from elsewhere show up in place.** A change made in the Markdown view, by Obsidian Sync or on another device
@@ -52,7 +54,7 @@ itself on its page in the [community directory](https://community.obsidian.md/pl
 
 | | Map is built from | Edit on the map | What a save writes | Folds are kept in | Desktop and mobile |
 | --- | --- | --- | --- | --- | --- |
-| **Mindslate** | The note's `# heading` and the nested list under it | Yes | Only the lines an edit touches; opening a note never writes it | The plugin's data (`data.json`), or the note when it already uses `<!-- markmap: fold -->` | Yes |
+| **Mindslate** | The note's `# heading` and the nested list under it | Yes | The lines an edit touches, plus [list tidying](core/format/README.md) in a list you add to or reorder; opening a note never writes it | The plugin's data (`data.json`), or the note when it already uses `<!-- markmap: fold -->` | Yes |
 | [Rich Mindmap](https://community.obsidian.md/plugins/rich-mindmap) | Headings and nested lists | Yes | Byte for byte, apart from five listed normalizations (such as CRLF to LF and a final newline) | The `mindmap-collapsed` property in the note | Yes |
 | [linkmind](https://community.obsidian.md/plugins/linkmind) | Headings and bullet lists | Yes | Every edit, as plain Markdown | — | Yes |
 | [OMM MindMap](https://community.obsidian.md/plugins/omm-mindmap) | A nested bullet list, one tree per top-level bullet | Yes | The outline as a bullet list, and its layouts in a `mindmap-layout` property; other properties are kept | — | Yes |

@@ -78,9 +78,9 @@ here is still welcome: it is reviewed here, and the change ships with the next v
   platform).
 - `npm run check` passes.
 - A change in behaviour comes with a test.
-- Maps are people's notes. Opening a note as a map never writes it, an edit rewrites only the lines it touches, and
-  nothing the user wrote is lost, not even when the note changes on disk while the map is open (see the format rules
-  in [core/format/README.md](core/format/README.md) and the comments at the top of `src/view.ts`).
+- Maps are people's notes. Opening a note as a map never writes it, an edit rewrites only the lines the format rules
+  allow ([core/format/README.md](core/format/README.md): R1, R2 and R6 say which), and nothing the user wrote is lost,
+  not even when the note changes on disk while the map is open (see the comments at the top of `src/view.ts`).
 - Update the README when something a user sees changes.
 - No network requests and no telemetry: Mindslate works offline ([Privacy](README.md#privacy)).
 

@@ -73,14 +73,15 @@ body:
     attributes:
       label: A note that shows the problem
       description: |
-        As small as you can make it. Replace anything personal with placeholder text. If the map changed the note in a way it shouldn't have, paste the note before and after; when spaces, tabs or line endings matter, attach the files instead.
-      render: markdown
+        As small as you can make it. Replace anything personal with placeholder text. Paste it between ```markdown fences, or attach the file. If the map changed the note in a way it shouldn't have, give the note before and after; when spaces, tabs or line endings matter, attach the files rather than pasting them.
       placeholder: |
+        ```markdown
         # Example
 
         - First
             - Child
         - Second
+        ```
     validations:
       required: false
   - type: textarea
