@@ -1,0 +1,26 @@
+{
+  "text": "Plan a Trip",
+  "children": [
+    {
+      "text": "Destination",
+      "children": ["Beach or mountains?", "Which season is best to visit?"]
+    },
+    "Set a budget for travel and stays",
+    {
+      "text": "Bookings in the right order",
+      "children": ["Flights first, then hotels", "Rental car for day trips and the airport transfer", "Restaurant tables"]
+    },
+    {
+      "text": "Travel documents",
+      "children": ["Check passport validity and visa rules for every stop on the route", "Get travel insurance"]
+    },
+    {
+      "text": "Local tips",
+      "children": ["Ask a friend who has been there", "Download offline maps before you leave"]
+    },
+    {
+      "text": "Trip journal",
+      "children": ["Every evening write down the highlights"]
+    }
+  ]
+}
