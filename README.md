@@ -194,3 +194,8 @@ welcome and ships with the next version: [CONTRIBUTING.md](CONTRIBUTING.md) expl
 ## License
 
 MIT, see [LICENSE](LICENSE).
+
+## More plugins by the author
+
+[Plain Deck](https://community.obsidian.md/plugins/plain-deck): study flashcards written in your notes, with
+spaced repetition (FSRS), and keep each card's progress in its own note, so it syncs with the vault.
