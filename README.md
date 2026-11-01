@@ -1,5 +1,8 @@
 # Mindslate
 
+**Edits touch only the lines you changed, so properties, links, comments and formatting in the note stay
+byte-for-byte intact.**
+
 Open a note as a keyboard-first mind map and edit it in place. The note stays an ordinary heading with a nested list.
 
 <p align="center">
