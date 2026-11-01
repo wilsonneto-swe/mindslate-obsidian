@@ -14,7 +14,7 @@ import { readFileSync, statSync, writeFileSync } from "node:fs";
 */
 var isBlank$1 = (c) => c === 32 || c === 9;
 /** `s.replace(/[ \t]+$/, '')`: without its trailing spaces and tabs. */
-function trimEndBlank(s) {
+function trimEndBlank$1(s) {
 	let e = s.length;
 	while (e > 0 && isBlank$1(s.charCodeAt(e - 1))) e--;
 	return e === s.length ? s : s.slice(0, e);
@@ -37,7 +37,7 @@ function trimEndLineBreaks(s) {
 	return e === s.length ? s : s.slice(0, e);
 }
 /** `s.replace(/(?:\r?\n[ \t]*)+$/, '')`: without its trailing line breaks and the spaces and tabs after each. */
-function trimEndBlankLines(s) {
+function trimEndBlankLines$1(s) {
 	let cut = s.length;
 	for (let i = s.length;;) {
 		let j = i;
@@ -54,7 +54,7 @@ function trimEndBlankLines(s) {
 * `s.replace(/(?:^|[ \t]+)#+[ \t]*$/, '')`: an ATX heading's text without its closing sequence (a run of "#" at
 * the end, after spaces or tabs or alone, and the blanks around it).
 */
-function trimClosingHashes(s) {
+function trimClosingHashes$1(s) {
 	let t = s.length;
 	while (t > 0 && isBlank$1(s.charCodeAt(t - 1))) t--;
 	let h = t;
@@ -157,16 +157,16 @@ function unescapeLine(line, first, bulletChar = "-") {
 	return k >= 1 && needsPrepend(line.slice(k), first, bulletChar) ? line.slice(1) : line;
 }
 /** The fold comment (markmap convention) from its `<!--` to the end of the line. */
-var FOLD_TAIL = /^<!--[ \t]*markmap:[ \t]*fold(?:All)?[ \t]*-->[ \t]*$/;
+var FOLD_TAIL$1 = /^<!--[ \t]*markmap:[ \t]*fold(?:All)?[ \t]*-->[ \t]*$/;
 /**
 * The fold suffix of a line: where it starts (the backslashes right before its `<` included) and how many there are,
 * or null. Exactly what `/(\\*)<!--[ \t]*markmap:[ \t]*fold(?:All)?[ \t]*-->[ \t]*$/` finds (its index and group 1),
 * whose scan from every position of a long run of backslashes is quadratic (LINEAR): the comment runs to the end
 * of the line and holds no `<` after its first character, so it can only start at the line's last `<!--`.
 */
-function foldSuffix(line) {
+function foldSuffix$1(line) {
 	const lt = line.lastIndexOf("<!--");
-	if (lt < 0 || !FOLD_TAIL.test(line.slice(lt))) return null;
+	if (lt < 0 || !FOLD_TAIL$1.test(line.slice(lt))) return null;
 	let at = lt;
 	while (at > 0 && line.charCodeAt(at - 1) === 92) at--;
 	return {
@@ -176,18 +176,18 @@ function foldSuffix(line) {
 }
 /** A literal fold-looking suffix in text gets one more backslash before `<` (R10f). */
 function escapeFoldSuffix(line) {
-	const f = foldSuffix(line);
+	const f = foldSuffix$1(line);
 	return f ? line.slice(0, f.at) + "\\" + line.slice(f.at) : line;
 }
 /** Reads the raw last line of an item: a backslash-free suffix means collapsed (R10f). */
 function readFoldSuffix(line) {
-	const f = foldSuffix(line);
+	const f = foldSuffix$1(line);
 	if (!f) return {
 		text: line,
 		fold: false
 	};
 	if (f.slashes === 0) return {
-		text: trimEndBlank(line.slice(0, f.at)),
+		text: trimEndBlank$1(line.slice(0, f.at)),
 		fold: true
 	};
 	return {
@@ -540,7 +540,7 @@ function parseItems(lines, from) {
 				emptyStart: false,
 				maskClose: null
 			};
-			const c = trimEndBlank(mk.content);
+			const c = trimEndBlank$1(mk.content);
 			if (c === "") {
 				f.lazy = "text";
 				f.emptyStart = true;
@@ -562,7 +562,7 @@ function parseItems(lines, from) {
 		const deep = stack[stack.length - 1];
 		if (deep && deep.lazy && pending.length === 0 && (L.col >= deep.contentCol ? !(L.col < deep.contentCol + 4 && interrupts(L.rest)) : !interrupts(L.rest) && !deep.emptyStart)) {
 			if (deep.lazy === "text") {
-				deep.b.textLines.push(trimEndBlank(L.rest));
+				deep.b.textLines.push(trimEndBlank$1(L.rest));
 				deep.b.textEnd = i - deep.b.start + 1;
 				deep.b.lastOwn = last = i;
 				deep.emptyStart = false;
@@ -703,7 +703,7 @@ function parseDocument(input, opts = { basename: "Untitled" }) {
 	let body = 0;
 	let frontmatter = null;
 	let frontmatterRange = null;
-	if (n && trimEndBlank(textAt(lines, 0)) === "---") {
+	if (n && trimEndBlank$1(textAt(lines, 0)) === "---") {
 		for (let j = 1; j < n; j++) if (/^(?:---|\.\.\.)[ \t]*$/.test(textAt(lines, j))) {
 			body = j + 1;
 			frontmatter = src.slice(0, endOf(j));
@@ -736,7 +736,7 @@ function parseDocument(input, opts = { basename: "Untitled" }) {
 		if (L.col === 0 && prevBlank && !markerAt(t)) inList = false;
 		prevBlank = false;
 		if (L.col <= 3 && H1.test(L.rest) && !(inList && L.col > 0)) {
-			const text = trimEndBlank(trimClosingHashes(L.rest.slice(1).replace(/^[ \t]+/, "")));
+			const text = trimEndBlank$1(trimClosingHashes$1(L.rest.slice(1).replace(/^[ \t]+/, "")));
 			head = {
 				line: i,
 				endLine: i,
@@ -1340,7 +1340,7 @@ function serializeWith(doc, root, ctx) {
 	else if (rootChanged) pre = src.slice(0, bodyStart) + (bodyStart ? eol + headLine + eol : headLine + eol + eol) + src.slice(bodyStart, at);
 	if (!list) {
 		if (!map) return bom + pre + post;
-		const b = trimEndBlankLines(pre);
+		const b = trimEndBlankLines$1(pre);
 		const a = post.replace(/^(?:[ \t]*\r?\n)+/, "");
 		if (!b) return bom + a;
 		if (!a) return bom + b + (doc.finalNewline ? eol : "");
@@ -1421,6 +1421,49 @@ var stripBom = (text) => text.charCodeAt(0) === 65279 ? text.slice(1) : text;
 var charCount = (s) => Array.from(s).length;
 /** A line holding nothing but whitespace. */
 var isBlank = (s) => s.trim() === "";
+var blank = (c) => c === 32 || c === 9;
+/** `s.replace(/[ \t]+$/, '')`. */
+function trimEndBlank(s) {
+	let e = s.length;
+	while (e > 0 && blank(s.charCodeAt(e - 1))) e--;
+	return e === s.length ? s : s.slice(0, e);
+}
+/** `s.replace(/(?:\n[ \t]*)+$/, '')`: without the blank lines at its end. */
+function trimEndBlankLines(s) {
+	let cut = s.length;
+	for (let i = s.length;;) {
+		let j = i;
+		while (j > 0 && blank(s.charCodeAt(j - 1))) j--;
+		if (j === 0 || s.charCodeAt(j - 1) !== 10) break;
+		cut = i = j - 1;
+	}
+	return cut === s.length ? s : s.slice(0, cut);
+}
+/** `s.replace(/(?:^|[ \t]+)#+[ \t]*$/, '')`: an ATX heading's text without its closing sequence. */
+function trimClosingHashes(s) {
+	const t = trimEndBlank(s).length;
+	let h = t;
+	while (h > 0 && s.charCodeAt(h - 1) === 35) h--;
+	if (h === t) return s;
+	if (h === 0) return "";
+	if (!blank(s.charCodeAt(h - 1))) return s;
+	return trimEndBlank(s.slice(0, h));
+}
+var FOLD_TAIL = /^<!--[ \t]*markmap:[ \t]*fold(?:All)?[ \t]*-->[ \t]*$/;
+/**
+* Where `/(\\*)<!--[ \t]*markmap:[ \t]*fold(?:All)?[ \t]*-->[ \t]*$/` matches (its index, and the length of group 1),
+* or null: the comment holds no "<" after its first character and runs to the end, so it starts at the last "<!--".
+*/
+function foldSuffix(line) {
+	const lt = line.lastIndexOf("<!--");
+	if (lt < 0 || !FOLD_TAIL.test(line.slice(lt))) return null;
+	let at = lt;
+	while (at > 0 && line.charCodeAt(at - 1) === 92) at--;
+	return {
+		at,
+		slashes: lt - at
+	};
+}
 /** A UTF-16 surrogate without its partner: such a string cannot be written as UTF-8. */
 var LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
 /** At most `max` characters of a label for a message, on one line. */
@@ -1536,7 +1579,6 @@ var LIMITS = {
 };
 var PLACEHOLDER = /^<!--[ \t]*-->[ \t]*$/;
 var FOLD_ONLY = /^<!--[ \t]*markmap:[ \t]*fold(?:All)?[ \t]*-->[ \t]*$/;
-var FOLD_SUFFIX = /(\\*)<!--[ \t]*markmap:[ \t]*fold(?:All)?[ \t]*-->[ \t]*$/;
 /** A fold comment anywhere: in a label (the parser strips it only at the very end of the last label line). */
 var FOLD_ANYWHERE = /<!--[ \t]*markmap:[ \t]*fold(?:All)?[ \t]*-->/;
 var ATX = /^#{1,6}(?:[ \t]|$)/;
@@ -1633,21 +1675,21 @@ function writtenTextLines(p) {
 	if (p.textEnd === 0) return [];
 	const raw = p.raw.slice(0, p.textEnd);
 	const out = [];
-	const content = (raw[0] ?? "").slice(p.indent.length + p.marker.length).replace(/^[ \t]+/, "").replace(/[ \t]+$/, "");
+	const content = trimEndBlank((raw[0] ?? "").slice(p.indent.length + p.marker.length).replace(/^[ \t]+/, ""));
 	if (content !== "" && !PLACEHOLDER.test(content) && !FOLD_ONLY.test(content)) out.push({
 		text: content,
 		offset: 0
 	});
 	raw.slice(1).forEach((l, k) => {
-		const r = lead(l).rest.replace(/[ \t]+$/, "");
+		const r = trimEndBlank(lead(l).rest);
 		if (r !== "") out.push({
 			text: r,
 			offset: k + 1
 		});
 	});
 	const last = out[out.length - 1];
-	const m = last ? FOLD_SUFFIX.exec(last.text) : null;
-	if (last && m && (m[1] ?? "") === "") last.text = last.text.slice(0, m.index).replace(/[ \t]+$/, "");
+	const f = last ? foldSuffix(last.text) : null;
+	if (last && f && f.slashes === 0) last.text = trimEndBlank(last.text.slice(0, f.at));
 	return out;
 }
 /** A structurally equal tree of new objects: the writer can no longer pair nodes by identity. */
@@ -2063,7 +2105,7 @@ function treeFromJson(source) {
 var FENCE = /^(?:---|\.\.\.)$/;
 /** The front matter block for the given option values (`---`, the YAML lines, `---`, each ending in LF). */
 function frontMatterBlock(values) {
-	const lines = values.flatMap((v) => v.replace(/\r\n?/g, "\n").split("\n")).map((l) => l.replace(/[ \t]+$/, ""));
+	const lines = values.flatMap((v) => v.replace(/\r\n?/g, "\n").split("\n")).map(trimEndBlank);
 	const trim = () => {
 		while (lines.length > 0 && lines[0] === "") lines.shift();
 		while (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
@@ -2086,7 +2128,6 @@ var MARK = /^([-+*•]|(\d{1,9})([.)]))(?=[ \t]|$)/;
 /** `***`, `- - -`, `___`: a horizontal rule, never a bullet. */
 var THEMATIC = /^(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})$/;
 var HEADING = /^#{1,6}(?:[ \t]+|$)/;
-var CLOSING_HASHES = /(?:^|[ \t]+)#+[ \t]*$/;
 function treeFromOutline(source, rootOption) {
 	const notes = [];
 	const top = {
@@ -2124,7 +2165,7 @@ function treeFromOutline(source, rootOption) {
 				}
 			}
 		}
-		text = text.replace(/[ \t]+$/, "");
+		text = trimEndBlank(text);
 		if (HEADING.test(text)) headingLines.push(index + 1);
 		const item = {
 			col: L.col,
@@ -2147,7 +2188,7 @@ function treeFromOutline(source, rootOption) {
 		branches = top.kids;
 	} else {
 		rootText = first.text;
-		if (HEADING.test(rootText)) rootText = rootText.replace(HEADING, "").replace(CLOSING_HASHES, "").replace(/[ \t]+$/, "");
+		if (HEADING.test(rootText)) rootText = trimEndBlank(trimClosingHashes(rootText.replace(HEADING, "")));
 		branches = [...first.kids, ...top.kids.slice(1)];
 		if (top.kids.length > 1) notes.push(`the first line is the root ("${normalizeRoot(rootText)}"); ${top.kids.length - 1} more top-level line${top.kids.length > 2 ? "s" : ""} became its children (use --root "Title" to make every top-level line a branch)`);
 	}
@@ -2166,7 +2207,7 @@ function treeFromOutline(source, rootOption) {
 function toJsonNode(node) {
 	const out = { text: node.text };
 	if (node.collapsed === true && node.children.length > 0) out.collapsed = true;
-	if (node.body !== void 0 && node.body.trim() !== "") out.note = node.body.replace(/^(?:[ \t]*\n)+/, "").replace(/(?:\n[ \t]*)+$/, "");
+	if (node.body !== void 0 && node.body.trim() !== "") out.note = trimEndBlankLines(node.body.replace(/^(?:[ \t]*\n)+/, ""));
 	if (node.children.length > 0) out.children = node.children.map(toJsonNode);
 	return out;
 }

@@ -665,7 +665,17 @@ def _first_line_block(s: str) -> bool:
     return _interrupts(s) or bool(RE_HTML7.match(s)) or link_def_start(s)
 
 
+def _opens_mask(s: str) -> bool:
+    """A line-start %% / $$ block that does not close on its own line: the app hides it up to its closer, and it is
+    never label text (parse.ts opensMask). A one-line "%% x %%" is plain text."""
+    return (s.startswith('%%') and '%%' not in s[2:]) or (s.startswith('$$') and '$$' not in s[2:])
+
+
 def _block_name(s: str) -> str:
+    if s.startswith('%%'):
+        return 'an Obsidian comment'
+    if s.startswith('$$'):
+        return 'a math block'
     if RE_ATX.match(s):
         return 'a heading'
     if s.startswith('>'):
@@ -854,6 +864,8 @@ def validate_light(text: str, basename: str):
             k += 1
             continue
         m = _ITEM.match(line)
+        if m and RE_THEMATIC.match(line.lstrip('\t')):
+            m = None  # "- --", "- - -": a horizontal rule, not an item (CommonMark 4.1): reported below the loop
         c = _CONT.match(line)
         if m:
             tabs = len(m.group(1))
@@ -887,6 +899,13 @@ def validate_light(text: str, basename: str):
                 blank = []
             content = m.group(2) if m.group(2) is not None else ''
             text = content.rstrip(' \t')
+            if text and text[0] in ' \t':
+                # the app reads the label from past the spaces (and 5 or more make it a code block): not followed here
+                errors.append((k + 1, 'line %d: more than one space after the "-" marker (%s): the canonical form has one; '
+                                      'this light validate does not read past this line, so the outline above stops here'
+                               % (k + 1, _q(_short(line.lstrip('\t'))))))
+                stop = k + 1
+                break
             if text and not _PLACEHOLDER.match(text) and not _FOLD_ONLY.match(text) and _first_line_block(text):
                 # Markdown and the app read the item as an empty node with a note (the map may go on below it)
                 errors.append((k + 1, 'line %d: %s right after the marker starts %s, so Markdown and the app read the item '
@@ -904,7 +923,17 @@ def validate_light(text: str, basename: str):
             stack.append(current)
         elif (c and current is not None and len(c.group(1)) == current_tabs and not blank
               and not _LIST_MARKER.match(c.group(2))):
-            if _interrupts(c.group(2)):
+            own = written[id(current)]
+            if own and (_PLACEHOLDER.match(own[0]) or _FOLD_ONLY.match(own[0])):
+                # an item whose marker line is only the empty-node or fold comment has no label to continue: the app
+                # reads the lines below it as a note
+                errors.append((k + 1, 'line %d: %s is below %s, so Markdown and the app read it as a note of an empty node, '
+                                      'not as its label (to make it the label, write it on the marker line instead of '
+                                      'the comment); this light validate does not read past this line, so the outline '
+                                      'above stops here' % (k + 1, _q(_short(c.group(2))), _q(own[0].rstrip(' \t')))))
+                stop = k + 1
+                break
+            if _interrupts(c.group(2)) or _opens_mask(c.group(2)):
                 # below a label, a line that starts a block ends it: that line and the ones after it are a note
                 errors.append((k + 1, 'line %d: %s starts %s, so Markdown and the app read it as a note under %s, not as '
                                       'more of its label (to make it part of the label it needs a backslash: write %s); '
@@ -924,12 +953,20 @@ def validate_light(text: str, basename: str):
         rest = lines[k]
         col, _, after = lead(rest)
         comment = re.match(r'<!--|%%|\$\$', after)
+        thematic = bool(RE_THEMATIC.match(after))
         # the list ends here for Markdown and the app too: a line at the margin, after a blank line or one that
-        # starts a block of its own (a heading, a quote, a fence, a rule); else the map may go on below this line
-        ends = (col == 0 and not _LIST_MARKER.match(after) and not comment
-                and bool(blank or _ATX_ANY.match(after) or after.startswith('>') or RE_FENCE.match(after)
-                         or RE_THEMATIC.match(after)))
-        if _LIST_MARKER.match(after):
+        # starts a block of its own (a heading, a quote, a fence, a rule, "- --" too); else the map may go on below
+        ends = (col == 0 and not comment
+                and (thematic or (not _LIST_MARKER.match(after)
+                                  and bool(blank or _ATX_ANY.match(after) or after.startswith('>') or RE_FENCE.match(after)))))
+        if thematic:
+            hint = ('three or more "-", "*" or "_" make a horizontal rule, %s'
+                    % ('which ends the list: the map ends above it' if col == 0 else 'which below an item is a note the map does '
+                                                                                     'not show'))
+            if after.startswith('- '):
+                hint += '; to make it a node write %s' % _q(rest[:len(rest) - len(rest.lstrip('\t'))] + '- '
+                                                             + escape_line(after[2:].rstrip(' \t'), True, '-'))
+        elif _LIST_MARKER.match(after):
             hint = 'indent with one TAB per level and use "- " markers'
         elif col > 0:
             hint = ('a line break inside a label is the item\'s TABs plus two spaces, right below the item; '
