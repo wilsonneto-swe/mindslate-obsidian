@@ -1047,7 +1047,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
     if (id !== null && exists(id)) {
       if (kind === 'ring') collapse(id, { reveal: false });
       else expand(id, { reveal: false });
-      if (sel !== id || others.size) select(id, { reveal: false });
+      if (sel !== id || others.size || resting) select(id, { reveal: false }); // REST: the clicked node shows selected
       revealIfClipped(id);
     }
     viewport.focus({ preventScroll: true });
@@ -2065,7 +2065,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
     const ringEl = target?.closest<HTMLElement>('.mm-ring') ?? null;
     const handleEl = ringEl ?? target?.closest<HTMLElement>('.mm-badge') ?? null;
     const handleId = handleEl?.dataset['id'];
-    const live = handleId !== undefined && !(ringEl !== null && e.pointerType === 'touch' && handleId !== sel);
+    const live = handleId !== undefined && !(ringEl !== null && e.pointerType === 'touch' && handleId !== shownSel()); // REST: no ring shows
     lastDownOnHandle = live;
     if (live && e.button === 0) {
       e.preventDefault();
@@ -2323,7 +2323,7 @@ export function mountEditor(container: HTMLElement, options: EditorOptions): Edi
     if (editingId !== null) endEdit({ reveal: false });
     const id = nodeEl?.dataset['id'];
     const onNode = id !== undefined && exists(id);
-    if (onNode && id !== sel && !others.has(id)) select(id, { reveal: false });
+    if (onNode && (resting || (id !== sel && !others.has(id)))) select(id, { reveal: false }); // REST: shown before the menu
     host(e, onNode);
   });
   const onWheel = (e: WheelEvent): void => {
