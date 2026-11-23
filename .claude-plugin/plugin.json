@@ -1,0 +1,5 @@
+{
+  "name": "mindslate",
+  "description": "Write Markdown mind maps that open in Mindslate and Obsidian",
+  "author": { "name": "Wilson Neto" }
+}

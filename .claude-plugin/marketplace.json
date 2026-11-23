@@ -1,0 +1,11 @@
+{
+  "name": "mindslate",
+  "owner": { "name": "Wilson Neto" },
+  "plugins": [
+    {
+      "name": "mindslate",
+      "description": "Write Markdown mind maps that open in Mindslate and Obsidian",
+      "source": "./"
+    }
+  ]
+}

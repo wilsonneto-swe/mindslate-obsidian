@@ -139,16 +139,19 @@ tree the map will show. In a vault where Mindslate is installed, the agent gives
 property, so with the plugin turned on the note opens as a map when you click it (if the plugin is off, the agent
 tells you to turn it on).
 
-Install it in Claude Code by copying the folder into your skills folder, then start a new session:
+This repository is also a Claude Code plugin marketplace. Install the skill in Claude Code with two commands:
 
 ```
-git clone --depth 1 https://github.com/wilsonneto-swe/mindslate-obsidian.git
-mkdir -p ~/.claude/skills && cp -R mindslate-obsidian/skills/markdown-mind-map ~/.claude/skills/
+/plugin marketplace add wilsonneto-swe/mindslate-obsidian
+/plugin install mindslate@mindslate
 ```
 
-Then ask, for example: "Make a mind map for our team offsite (venue, agenda, budget) in my Obsidian vault." For the
-Claude apps and other agents, and more example prompts, see [skills/README.md](skills/README.md). The skill is not
-part of the plugin: Obsidian never loads it, and the plugin's releases do not include it.
+On Claude Code 2.1.275 or later, one command does both: `/plugin install mindslate --marketplace
+wilsonneto-swe/mindslate-obsidian`. Then ask, for example: "Make a mind map for our team offsite (venue, agenda,
+budget) in my Obsidian vault." `/plugin marketplace update mindslate` brings the skill up to date. To install it
+without the plugin, by copying the folder, and for the Claude apps, other agents and more example prompts, see
+[skills/README.md](skills/README.md). The skill is not part of the Obsidian plugin: Obsidian never loads it, and the
+plugin's releases do not include it.
 
 ## Installation
 
@@ -183,7 +186,8 @@ npm run check      # Obsidian's lint rules, type checks, tests and the build
 ```
 
 The plugin's code is in `src/`; `core/` is the Mindslate editor it bundles (the Markdown reader and writer, the
-layout, the rendering and the keyboard and pointer input); `skills/` holds the agent skill, outside the build. Copy `main.js`, `manifest.json` and `styles.css` into
+layout, the rendering and the keyboard and pointer input); `skills/` holds the agent skill, outside the build, and
+`.claude-plugin/` the manifests that make the repository a Claude Code plugin for it. Copy `main.js`, `manifest.json` and `styles.css` into
 `<vault>/.obsidian/plugins/mindslate/`. Releases are built by GitHub Actions when a version tag is pushed
 (`.github/workflows/release.yml`), with build attestations. [CONTRIBUTING.md](CONTRIBUTING.md) covers trying a
 build in a test vault, reporting a bug and sending a pull request.
