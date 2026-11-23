@@ -20,9 +20,27 @@ markdown-mind-map/
 
 `mindmap.mjs` is built from Mindslate's own Markdown reader and writer (`core/format/`), so a map it writes is byte
 for byte what the plugin writes for the same tree. The skill is not part of the plugin: Obsidian never loads it, and
-the plugin's releases (`main.js`, `manifest.json`, `styles.css`) do not include it.
+the Obsidian plugin's releases (`main.js`, `manifest.json`, `styles.css`) do not include it.
 
 ## Install in Claude Code
+
+### As a plugin
+
+The repository is a Claude Code plugin marketplace (`.claude-plugin/` at its root) with one plugin, `mindslate`,
+that holds this skill. In Claude Code, run:
+
+```
+/plugin marketplace add wilsonneto-swe/mindslate-obsidian
+/plugin install mindslate@mindslate
+```
+
+On Claude Code 2.1.275 or later, `/plugin install mindslate --marketplace wilsonneto-swe/mindslate-obsidian` does
+both in one step. From a terminal, the same commands are `claude plugin marketplace add
+wilsonneto-swe/mindslate-obsidian` and `claude plugin install mindslate@mindslate`. The skill's name is then
+`mindslate:markdown-mind-map`. `/plugin marketplace update mindslate` fetches the latest version, and
+`/plugin uninstall mindslate@mindslate` removes it.
+
+### By copying the folder
 
 Claude Code loads skills from `~/.claude/skills/` (every project) and from `.claude/skills/` inside a project (that
 project only). Get this repository and copy the folder there:
